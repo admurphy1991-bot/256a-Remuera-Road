@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Sign In/Out - Sansoms @ 256a Remuera Road</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2d3748;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header-logo {
+            max-width: 200px;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: #e2e8f0;
+            color: #4a5568;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+        }
+
+        .btn-secondary {
+            background: #ed8936;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #dd6b20;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(237, 137, 54, 0.4);
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .visitor-list {
+            margin-top: 20px;
+        }
+
+        .visitor-card {
+            background: #f7fafc;
+            border-left: 4px solid #48bb78;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .visitor-card.signed-out {
+            border-left-color: #cbd5e0;
+            opacity: 0.7;
+        }
+
+        .visitor-name {
+            font-weight: 600;
+            font-size: 16px;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .visitor-details {
+            font-size: 14px;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+
+        .site-safe-badge {
+            display: inline-block;
+            background: #ebf8ff;
+            color: #2b6cb0;
+            border: 1px solid #bee3f8;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .sign-out-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #ed8936;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .sign-out-btn:hover {
+            background: #dd6b20;
+        }
+
+        .qr-section {
+            text-align: center;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        #qrcode {
+            display: inline-block;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .qr-instructions {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #4a5568;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #4a5568;
+            margin-top: 5px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 2px solid #48bb78;
+        }
+
+        .alert-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 2px solid #f56565;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #a0aec0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #4a5568;
+        }
+
+        .search-section {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .search-results {
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .search-result-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .search-result-item:hover {
+            border-color: #48bb78;
+            background: #f0fff4;
+            transform: translateX(5px);
+        }
+
+        .search-result-name {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 3px;
+        }
+
+        .search-result-details {
+            font-size: 13px;
+            color: #718096;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 25px 0;
+            color: #a0aec0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .divider span {
+            padding: 0 15px;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+            }
+            .tab-buttons, .content > *:not(#qr) {
+                display: none !important;
+            }
+            #qr {
+                display: block !important;
+                text-align: center;
+                padding: 40px !important;
+            }
+            .qr-section {
+                padding: 40px !important;
+            }
+            .qr-section img {
+                max-width: 400px !important;
+                margin-bottom: 30px !important;
+            }
+            #qrcode {
+                margin: 30px auto !important;
+            }
+            #qrcode img {
+                margin: 0 auto !important;
+            }
+            .qr-instructions {
+                font-size: 18px !important;
+                margin-top: 30px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="sansom-logo.jpg" alt="Sansoms Logo" class="header-logo">
+            <h1>🏗️ Site Visitor Management</h1>
+            <p>Sansoms @ 256a Remuera Road</p>
+        </div>
+
+        <div class="content">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="showTab('signin')">Sign In</button>
+                <button class="tab-btn" onclick="showTab('signout')">Sign Out</button>
+                <button class="tab-btn" onclick="showTab('register')">View Register</button>
+                <button class="tab-btn" onclick="showTab('qr')">QR Code</button>
+            </div>
+
+            <!-- Sign In Tab -->
+            <div id="signin" class="tab-content active">
+                <h2 style="margin-bottom: 20px; color: #2d3748;">Sign In</h2>
+                
+                <!-- Quick Search for Returning Visitors -->
+                <div class="search-section">
+                    <input 
+                        type="text" 
+                        id="visitorSearch" 
+                        class="search-input" 
+                        placeholder="🔍 Returning visitor? Type your name to search..."
+                        autocomplete="off"
+                    >
+                    <div id="searchResults" class="search-results"></div>
+                </div>
+
+                <div class="divider">
+                    <span>OR SIGN IN MANUALLY</span>
+                </div>
+
+                <form id="signinForm">
+                    <div class="form-group">
+                        <label for="name">Full Name *</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="company">Company *</label>
+                        <input type="text" id="company" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="type">Visitor Type *</label>
+                        <select id="type" required>
+                            <option value="">-- Select --</option>
+                            <option value="Contractor">Contractor</option>
+                            <option value="Client">Client</option>
+                            <option value="Visitor">Visitor</option>
+                            <option value="Supplier">Supplier</option>
+                            <option value="Inspector">Inspector</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact">Contact Number</label>
+                        <input type="tel" id="contact">
+                    </div>
+                    <div class="form-group">
+                        <label for="siteSafeNumber">Site Safe Number</label>
+                        <input type="text" id="siteSafeNumber" placeholder="e.g. SS123456">
+                    </div>
+                    <div class="form-group">
+                        <label for="carRego">Car Registration (optional)</label>
+                        <input type="text" id="carRego" placeholder="e.g. ABC123">
+                    </div>
+                    <button type="submit" class="btn btn-primary">✓ Sign In</button>
+                </form>
+            </div>
+
+            <!-- Sign Out Tab -->
+            <div id="signout" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: #2d3748;">Sign Out</h2>
+                <div id="activeVisitors"></div>
+            </div>
+
+            <!-- Register Tab -->
+            <div id="register" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: #2d3748;">Visitor Register</h2>
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="onSiteCount">0</div>
+                        <div class="stat-label">Currently On Site</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalCount">0</div>
+                        <div class="stat-label">Total Today</div>
+                    </div>
+                </div>
+                <button onclick="downloadCSV()" class="btn btn-secondary">📥 Download CSV</button>
+                <div class="visitor-list" id="registerList"></div>
+            </div>
+
+            <!-- QR Code Tab -->
+            <div id="qr" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: #2d3748;">QR Code Sign In</h2>
+                <div class="qr-section">
+                    <img src="sansom-logo.jpg" alt="Sansoms Logo" style="max-width: 300px; margin-bottom: 20px;">
+                    <div id="qrcode"></div>
+                    <div class="qr-instructions">
+                        <strong>📱 Scan this QR code to sign in</strong><br>
+                        Print this page and display at site entrance
+                    </div>
+                </div>
+                <p style="color: #4a5568; font-size: 14px; margin-bottom: 10px;">
+                    <strong>Current URL:</strong> <span id="currentUrl"></span>
+                </p>
+                <button onclick="window.print()" class="btn btn-secondary">🖨️ Print QR Code</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let visitors = [];
+        let refreshInterval;
+
+        // API Functions
+        async function fetchVisitors() {
+            try {
+                const response = await fetch('/api/visitors');
+                if (!response.ok) throw new Error('Failed to fetch');
+                visitors = await response.json();
+                updatePreviousVisitors();
+                updateDisplay();
+            } catch (error) {
+                console.error('Error fetching visitors:', error);
+                showAlert('Failed to load visitor data', 'error');
+            }
+        }
+
+        async function addVisitor(visitorData) {
+            try {
+                const response = await fetch('/api/visitors', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(visitorData)
+                });
+                if (!response.ok) throw new Error('Failed to add');
+                await fetchVisitors();
+                return true;
+            } catch (error) {
+                console.error('Error adding visitor:', error);
+                showAlert('Failed to sign in visitor', 'error');
+                return false;
+            }
+        }
+
+        async function signOutVisitor(id) {
+            try {
+                const response = await fetch(`/api/visitors/${id}/signout`, {
+                    method: 'PUT'
+                });
+                if (!response.ok) throw new Error('Failed to sign out');
+                await fetchVisitors();
+            } catch (error) {
+                console.error('Error signing out:', error);
+                showAlert('Failed to sign out visitor', 'error');
+            }
+        }
+
+        async function clearAllVisitors() {
+            try {
+                const response = await fetch('/api/visitors', {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error('Failed to clear');
+                await fetchVisitors();
+            } catch (error) {
+                console.error('Error clearing visitors:', error);
+                showAlert('Failed to clear register', 'error');
+            }
+        }
+
+        // Visitor Search Functionality
+        let previousVisitors = [];
+
+        function updatePreviousVisitors() {
+            const uniqueVisitors = [];
+            const seenNames = new Set();
+            
+            const sortedVisitors = [...visitors].sort((a, b) => 
+                new Date(b.signInTime) - new Date(a.signInTime)
+            );
+            
+            for (const visitor of sortedVisitors) {
+                if (!seenNames.has(visitor.name.toLowerCase())) {
+                    seenNames.add(visitor.name.toLowerCase());
+                    uniqueVisitors.push(visitor);
+                }
+            }
+            
+            previousVisitors = uniqueVisitors.slice(0, 50);
+        }
+
+        function searchVisitors(searchTerm) {
+            if (!searchTerm || searchTerm.length < 2) {
+                document.getElementById('searchResults').innerHTML = '';
+                return;
+            }
+            
+            const term = searchTerm.toLowerCase();
+            const results = previousVisitors.filter(v => 
+                v.name.toLowerCase().includes(term) ||
+                v.company.toLowerCase().includes(term)
+            ).slice(0, 10);
+            
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<div style="padding: 15px; text-align: center; color: #a0aec0;">No matching visitors found</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = results.map(v => `
+                <div class="search-result-item" onclick="quickSignIn(${v.id})">
+                    <div class="search-result-name">${v.name}</div>
+                    <div class="search-result-details">
+                        ${v.company} • ${v.type}${v.siteSafeNumber ? ` • Site Safe: ${v.siteSafeNumber}` : ''}${v.carRego ? ` • ${v.carRego}` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function quickSignIn(visitorId) {
+            const visitor = previousVisitors.find(v => v.id === visitorId);
+            if (!visitor) return;
+            
+            const visitorData = {
+                name: visitor.name,
+                company: visitor.company,
+                type: visitor.type,
+                contact: visitor.contact || '',
+                siteSafeNumber: visitor.siteSafeNumber || '',
+                carRego: visitor.carRego || ''
+            };
+            
+            const success = await addVisitor(visitorData);
+            
+            if (success) {
+                document.getElementById('visitorSearch').value = '';
+                document.getElementById('searchResults').innerHTML = '';
+                showAlert(`✓ ${visitor.name} signed in successfully!`, 'success');
+            }
+        }
+
+        // Initialize
+        window.onload = function() {
+            const currentUrl = window.location.href.split('#')[0];
+            document.getElementById('currentUrl').textContent = currentUrl;
+            new QRCode(document.getElementById("qrcode"), {
+                text: currentUrl,
+                width: 400,
+                height: 400,
+                colorDark: "#2d3748",
+                colorLight: "#ffffff",
+            });
+
+            fetchVisitors();
+
+            document.getElementById('visitorSearch').addEventListener('input', (e) => {
+                searchVisitors(e.target.value);
+            });
+
+            refreshInterval = setInterval(() => {
+                const activeTab = document.querySelector('.tab-content.active');
+                if (activeTab && (activeTab.id === 'signout' || activeTab.id === 'register')) {
+                    fetchVisitors();
+                }
+            }, 10000);
+
+            setInterval(autoSignOutAt6pm, 60000);
+            autoSignOutAt6pm();
+        };
+
+        async function autoSignOutAt6pm() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+
+            if (hours === 18 && minutes === 0) {
+                const activeVisitors = visitors.filter(v => !v.signOutTime);
+                
+                for (const visitor of activeVisitors) {
+                    try {
+                        await fetch(`/api/visitors/${visitor.id}/signout`, {
+                            method: 'PUT'
+                        });
+                    } catch (error) {
+                        console.error('Error auto-signing out visitor:', error);
+                    }
+                }
+                
+                if (activeVisitors.length > 0) {
+                    await fetchVisitors();
+                    console.log(`Auto-signed out ${activeVisitors.length} visitor(s) at 6pm`);
+                }
+            }
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'signout' || tabName === 'register') {
+                fetchVisitors();
+            }
+        }
+
+        document.getElementById('signinForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const visitorData = {
+                name: document.getElementById('name').value,
+                company: document.getElementById('company').value,
+                type: document.getElementById('type').value,
+                contact: document.getElementById('contact').value,
+                siteSafeNumber: document.getElementById('siteSafeNumber').value,
+                carRego: document.getElementById('carRego').value
+            };
+            
+            const success = await addVisitor(visitorData);
+            
+            if (success) {
+                showAlert(`✓ ${visitorData.name} signed in successfully!`, 'success');
+                this.reset();
+            }
+        });
+
+        function showAlert(message, type) {
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
+
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            document.getElementById('signin').insertBefore(alert, document.getElementById('signinForm'));
+            
+            setTimeout(() => alert.remove(), 3000);
+        }
+
+        function updateDisplay() {
+            const activeVisitors = visitors.filter(v => !v.signOutTime);
+            const activeDiv = document.getElementById('activeVisitors');
+            
+            if (activeVisitors.length === 0) {
+                activeDiv.innerHTML = '<div class="empty-state">No visitors currently on site</div>';
+            } else {
+                activeDiv.innerHTML = activeVisitors.map(v => `
+                    <div class="visitor-card">
+                        <div class="visitor-name">${v.name}</div>
+                        <div class="visitor-details">
+                            ${v.company} | ${v.type}<br>
+                            Signed in: ${new Date(v.signInTime).toLocaleTimeString()}
+                            ${v.siteSafeNumber ? `<br><span class="site-safe-badge">🛡️ Site Safe: ${v.siteSafeNumber}</span>` : ''}
+                            ${v.carRego ? `<br>Car: ${v.carRego}` : ''}
+                        </div>
+                        <button class="sign-out-btn" onclick="signOutVisitor(${v.id})">Sign Out</button>
+                    </div>
+                `).join('');
+            }
+
+            const registerDiv = document.getElementById('registerList');
+            const today = new Date().toDateString();
+            const todayVisitors = visitors.filter(v => 
+                new Date(v.signInTime).toDateString() === today
+            );
+
+            if (todayVisitors.length === 0) {
+                registerDiv.innerHTML = '<div class="empty-state">No visitors today</div>';
+            } else {
+                registerDiv.innerHTML = todayVisitors.map(v => `
+                    <div class="visitor-card ${v.signOutTime ? 'signed-out' : ''}">
+                        <div class="visitor-name">${v.name} - ${v.company}</div>
+                        <div class="visitor-details">
+                            ${v.type}${v.carRego ? ` | Car: ${v.carRego}` : ''}<br>
+                            ${v.siteSafeNumber ? `<span class="site-safe-badge">🛡️ Site Safe: ${v.siteSafeNumber}</span><br>` : ''}
+                            In: ${new Date(v.signInTime).toLocaleTimeString()}
+                            ${v.signOutTime ? ` | Out: ${new Date(v.signOutTime).toLocaleTimeString()}` : ' | <strong>Still on site</strong>'}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('onSiteCount').textContent = activeVisitors.length;
+            document.getElementById('totalCount').textContent = todayVisitors.length;
+        }
+
+        function downloadCSV() {
+            const password = prompt('Enter password to download CSV:');
+            if (password !== 'Sansom12345') {
+                alert('Incorrect password!');
+                return;
+            }
+            
+            const csv = [
+                ['Name', 'Company', 'Type', 'Contact', 'Site Safe Number', 'Car Registration', 'Sign In', 'Sign Out'],
+                ...visitors.map(v => [
+                    v.name,
+                    v.company,
+                    v.type,
+                    v.contact || '',
+                    v.siteSafeNumber || '',
+                    v.carRego || '',
+                    new Date(v.signInTime).toLocaleString(),
+                    v.signOutTime ? new Date(v.signOutTime).toLocaleString() : 'Still on site'
+                ])
+            ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `visitor-register-256a-remuera-road-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

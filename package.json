@@ -1,0 +1,15 @@
+{
+  "name": "site-visitor-management",
+  "version": "1.0.0",
+  "description": "Multi-device visitor sign in/out system - 256a Remuera Road",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "keywords": ["visitor", "sign-in", "construction", "site-management"],
+  "author": "Sansoms",
+  "license": "MIT"
+}
