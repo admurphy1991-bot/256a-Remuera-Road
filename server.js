@@ -1,29 +1,56 @@
 const express = require('express');
-const fs = require('fs').promises;
 const path = require('path');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'visitors.json');
+
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('railway.internal')
+        ? { rejectUnauthorized: false }
+        : false
+});
 
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Initialize data file if it doesn't exist
-async function initDataFile() {
-    try {
-        await fs.access(DATA_FILE);
-    } catch {
-        await fs.writeFile(DATA_FILE, JSON.stringify([]));
-    }
+async function initDb() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS visitors (
+            id BIGINT PRIMARY KEY,
+            name TEXT NOT NULL,
+            company TEXT,
+            type TEXT,
+            contact TEXT,
+            site_safe_number TEXT,
+            car_rego TEXT,
+            sign_in_time TIMESTAMPTZ NOT NULL,
+            sign_out_time TIMESTAMPTZ
+        )
+    `);
+}
+
+function toVisitorJson(row) {
+    return {
+        id: Number(row.id),
+        name: row.name,
+        company: row.company,
+        type: row.type,
+        contact: row.contact,
+        siteSafeNumber: row.site_safe_number,
+        carRego: row.car_rego,
+        signInTime: row.sign_in_time,
+        signOutTime: row.sign_out_time
+    };
 }
 
 // Get all visitors
 app.get('/api/visitors', async (req, res) => {
     try {
-        const data = await fs.readFile(DATA_FILE, 'utf8');
-        res.json(JSON.parse(data));
+        const result = await pool.query('SELECT * FROM visitors ORDER BY sign_in_time ASC');
+        res.json(result.rows.map(toVisitorJson));
     } catch (error) {
         res.status(500).json({ error: 'Failed to read visitors' });
     }
@@ -32,20 +59,18 @@ app.get('/api/visitors', async (req, res) => {
 // Add new visitor (sign in)
 app.post('/api/visitors', async (req, res) => {
     try {
-        const data = await fs.readFile(DATA_FILE, 'utf8');
-        const visitors = JSON.parse(data);
-        
-        const newVisitor = {
-            id: Date.now(),
-            ...req.body,
-            signInTime: new Date().toISOString(),
-            signOutTime: null
-        };
-        
-        visitors.push(newVisitor);
-        await fs.writeFile(DATA_FILE, JSON.stringify(visitors, null, 2));
-        
-        res.json(newVisitor);
+        const { name, company, type, contact, siteSafeNumber, carRego } = req.body;
+        const id = Date.now();
+        const signInTime = new Date().toISOString();
+
+        const result = await pool.query(
+            `INSERT INTO visitors (id, name, company, type, contact, site_safe_number, car_rego, sign_in_time)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING *`,
+            [id, name, company, type, contact || null, siteSafeNumber || null, carRego || null, signInTime]
+        );
+
+        res.json(toVisitorJson(result.rows[0]));
     } catch (error) {
         res.status(500).json({ error: 'Failed to add visitor' });
     }
@@ -54,14 +79,14 @@ app.post('/api/visitors', async (req, res) => {
 // Sign out visitor
 app.put('/api/visitors/:id/signout', async (req, res) => {
     try {
-        const data = await fs.readFile(DATA_FILE, 'utf8');
-        const visitors = JSON.parse(data);
-        
-        const visitor = visitors.find(v => v.id === parseInt(req.params.id));
-        if (visitor) {
-            visitor.signOutTime = new Date().toISOString();
-            await fs.writeFile(DATA_FILE, JSON.stringify(visitors, null, 2));
-            res.json(visitor);
+        const signOutTime = new Date().toISOString();
+        const result = await pool.query(
+            'UPDATE visitors SET sign_out_time = $1 WHERE id = $2 RETURNING *',
+            [signOutTime, req.params.id]
+        );
+
+        if (result.rows.length > 0) {
+            res.json(toVisitorJson(result.rows[0]));
         } else {
             res.status(404).json({ error: 'Visitor not found' });
         }
@@ -71,7 +96,7 @@ app.put('/api/visitors/:id/signout', async (req, res) => {
 });
 
 // Start server
-initDataFile().then(() => {
+initDb().then(() => {
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`
 ╔═══════════════════════════════════════════════════════════╗
@@ -87,4 +112,7 @@ initDataFile().then(() => {
 ╚═══════════════════════════════════════════════════════════╝
         `);
     });
+}).catch((error) => {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
 });
