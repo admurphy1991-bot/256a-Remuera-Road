@@ -504,6 +504,115 @@
 
         .rp-3 .rp-triangle { color: rgba(45,55,72,0.85); }
 
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: white;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        .modal-header {
+            background: #c53030;
+            color: white;
+            padding: 20px 25px;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+        }
+
+        .modal-body {
+            padding: 20px 25px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 20px 25px;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        .hazard-board-item {
+            background: #fff5f5;
+            border-left: 4px solid #f56565;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .hazard-board-desc {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+
+        .ack-checkbox-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+
+        .ack-checkbox-row input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .ack-checkbox-row span {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 15px;
+        }
+
+        .modal-footer .btn {
+            margin-top: 0;
+        }
+
+        .modal-btn-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-cancel {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-cancel:hover {
+            background: #cbd5e0;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
         @media print {
             body {
                 background: white;
@@ -748,6 +857,29 @@
         </div>
     </div>
 
+    <!-- Hazard Board Acknowledgement Modal -->
+    <div id="hazardBoardModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2>⚠️ Site Hazard Board</h2>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: #4a5568;">Please read the current site hazards below before signing in.</p>
+                <div id="hazardBoardList"></div>
+            </div>
+            <div class="modal-footer">
+                <label class="ack-checkbox-row" for="hazardAckCheckbox">
+                    <input type="checkbox" id="hazardAckCheckbox" onchange="document.getElementById('hazardAckContinueBtn').disabled = !this.checked">
+                    <span>I have read and understood the hazards above and agree to work safely on site.</span>
+                </label>
+                <div class="modal-btn-row">
+                    <button type="button" class="btn btn-cancel" onclick="closeHazardBoard()">Cancel</button>
+                    <button type="button" id="hazardAckContinueBtn" class="btn btn-primary" disabled onclick="confirmHazardAcknowledgement()">✓ Acknowledge & Sign In</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let visitors = [];
         let refreshInterval;
@@ -968,6 +1100,65 @@
             window.URL.revokeObjectURL(url);
         }
 
+        // Hazard Board Acknowledgement (required before sign in)
+        let pendingVisitorData = null;
+
+        async function openHazardBoard(visitorData) {
+            pendingVisitorData = visitorData;
+            await fetchHazards();
+            renderHazardBoardModal();
+            document.getElementById('hazardAckCheckbox').checked = false;
+            document.getElementById('hazardAckContinueBtn').disabled = true;
+            document.getElementById('hazardBoardModal').classList.add('active');
+        }
+
+        function renderHazardBoardModal() {
+            const listDiv = document.getElementById('hazardBoardList');
+            const openHazards = hazards.filter(h => h.status !== 'Closed');
+
+            if (openHazards.length === 0) {
+                listDiv.innerHTML = '<div class="empty-state">No hazards currently identified on site.</div>';
+                return;
+            }
+
+            listDiv.innerHTML = openHazards.map(h => {
+                const { cls } = riskBandFor(h.riskScore);
+                return `
+                    <div class="hazard-board-item">
+                        <div class="hazard-board-desc">
+                            ${h.description}
+                            <span class="risk-badge ${cls}">${h.riskBand}</span>
+                        </div>
+                        📍 ${h.location || 'Not specified'}
+                        ${h.immediateAction ? `<br>Current control: ${h.immediateAction}` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function closeHazardBoard() {
+            pendingVisitorData = null;
+            document.getElementById('hazardBoardModal').classList.remove('active');
+        }
+
+        async function confirmHazardAcknowledgement() {
+            if (!document.getElementById('hazardAckCheckbox').checked || !pendingVisitorData) return;
+
+            const visitorData = { ...pendingVisitorData, hazardsAcknowledged: true };
+            const success = await addVisitor(visitorData);
+
+            document.getElementById('hazardBoardModal').classList.remove('active');
+
+            if (success) {
+                showAlert(`✓ ${visitorData.name} signed in successfully!`, 'success');
+                document.getElementById('signinForm').reset();
+                document.getElementById('visitorSearch').value = '';
+                document.getElementById('searchResults').innerHTML = '';
+            }
+
+            pendingVisitorData = null;
+        }
+
         // Visitor Search Functionality
         let previousVisitors = [];
 
@@ -1021,7 +1212,7 @@
         async function quickSignIn(visitorId) {
             const visitor = previousVisitors.find(v => v.id === visitorId);
             if (!visitor) return;
-            
+
             const visitorData = {
                 name: visitor.name,
                 company: visitor.company,
@@ -1030,14 +1221,8 @@
                 siteSafeNumber: visitor.siteSafeNumber || '',
                 carRego: visitor.carRego || ''
             };
-            
-            const success = await addVisitor(visitorData);
-            
-            if (success) {
-                document.getElementById('visitorSearch').value = '';
-                document.getElementById('searchResults').innerHTML = '';
-                showAlert(`✓ ${visitor.name} signed in successfully!`, 'success');
-            }
+
+            await openHazardBoard(visitorData);
         }
 
         // Initialize
@@ -1115,7 +1300,7 @@
 
         document.getElementById('signinForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const visitorData = {
                 name: document.getElementById('name').value,
                 company: document.getElementById('company').value,
@@ -1124,13 +1309,8 @@
                 siteSafeNumber: document.getElementById('siteSafeNumber').value,
                 carRego: document.getElementById('carRego').value
             };
-            
-            const success = await addVisitor(visitorData);
-            
-            if (success) {
-                showAlert(`✓ ${visitorData.name} signed in successfully!`, 'success');
-                this.reset();
-            }
+
+            await openHazardBoard(visitorData);
         });
 
         document.getElementById('hazardForm').addEventListener('submit', async function(e) {

@@ -27,9 +27,14 @@ async function initDb() {
             site_safe_number TEXT,
             car_rego TEXT,
             sign_in_time TIMESTAMPTZ NOT NULL,
-            sign_out_time TIMESTAMPTZ
+            sign_out_time TIMESTAMPTZ,
+            hazards_acknowledged BOOLEAN NOT NULL DEFAULT FALSE,
+            hazards_acknowledged_time TIMESTAMPTZ
         )
     `);
+
+    await pool.query(`ALTER TABLE visitors ADD COLUMN IF NOT EXISTS hazards_acknowledged BOOLEAN NOT NULL DEFAULT FALSE`);
+    await pool.query(`ALTER TABLE visitors ADD COLUMN IF NOT EXISTS hazards_acknowledged_time TIMESTAMPTZ`);
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS hazards (
@@ -69,7 +74,9 @@ function toVisitorJson(row) {
         siteSafeNumber: row.site_safe_number,
         carRego: row.car_rego,
         signInTime: row.sign_in_time,
-        signOutTime: row.sign_out_time
+        signOutTime: row.sign_out_time,
+        hazardsAcknowledged: row.hazards_acknowledged,
+        hazardsAcknowledgedTime: row.hazards_acknowledged_time
     };
 }
 
@@ -86,13 +93,18 @@ app.get('/api/visitors', async (req, res) => {
 // Add new visitor (sign in)
 app.post('/api/visitors', async (req, res) => {
     try {
-        const { name, company, type, contact, siteSafeNumber, carRego } = req.body;
+        const { name, company, type, contact, siteSafeNumber, carRego, hazardsAcknowledged } = req.body;
+
+        if (!hazardsAcknowledged) {
+            return res.status(400).json({ error: 'You must acknowledge the site hazard board before signing in' });
+        }
+
         const id = Date.now();
         const signInTime = new Date().toISOString();
 
         const result = await pool.query(
-            `INSERT INTO visitors (id, name, company, type, contact, site_safe_number, car_rego, sign_in_time)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO visitors (id, name, company, type, contact, site_safe_number, car_rego, sign_in_time, hazards_acknowledged, hazards_acknowledged_time)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, $8)
              RETURNING *`,
             [id, name, company, type, contact || null, siteSafeNumber || null, carRego || null, signInTime]
         );
