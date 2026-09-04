@@ -1,7 +1,7 @@
 {
   "name": "site-visitor-management",
   "version": "1.0.0",
-  "description": "Multi-device visitor sign in/out system - 256a Remuera Road",
+  "description": "Multi-device visitor sign in/out system - 456a Remuera Road",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
