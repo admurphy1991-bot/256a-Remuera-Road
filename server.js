@@ -30,6 +30,33 @@ async function initDb() {
             sign_out_time TIMESTAMPTZ
         )
     `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS hazards (
+            id BIGINT PRIMARY KEY,
+            description TEXT NOT NULL,
+            location TEXT,
+            reported_by TEXT,
+            likelihood INTEGER NOT NULL,
+            consequence INTEGER NOT NULL,
+            risk_score INTEGER NOT NULL,
+            risk_band TEXT NOT NULL,
+            immediate_action TEXT,
+            status TEXT NOT NULL DEFAULT 'Open',
+            reported_time TIMESTAMPTZ NOT NULL,
+            closed_action TEXT,
+            closed_by TEXT,
+            closed_time TIMESTAMPTZ
+        )
+    `);
+}
+
+// Sansom risk matrix bands: Critical 15-25, High 8-12, Moderate 4-6, Low 1-3
+function riskBand(score) {
+    if (score >= 15) return 'Critical';
+    if (score >= 8) return 'High';
+    if (score >= 4) return 'Moderate';
+    return 'Low';
 }
 
 function toVisitorJson(row) {
@@ -92,6 +119,88 @@ app.put('/api/visitors/:id/signout', async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ error: 'Failed to sign out visitor' });
+    }
+});
+
+function toHazardJson(row) {
+    return {
+        id: Number(row.id),
+        description: row.description,
+        location: row.location,
+        reportedBy: row.reported_by,
+        likelihood: row.likelihood,
+        consequence: row.consequence,
+        riskScore: row.risk_score,
+        riskBand: row.risk_band,
+        immediateAction: row.immediate_action,
+        status: row.status,
+        reportedTime: row.reported_time,
+        closedAction: row.closed_action,
+        closedBy: row.closed_by,
+        closedTime: row.closed_time
+    };
+}
+
+// Get all hazards
+app.get('/api/hazards', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM hazards ORDER BY reported_time DESC');
+        res.json(result.rows.map(toHazardJson));
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to read hazards' });
+    }
+});
+
+// Report a new hazard
+app.post('/api/hazards', async (req, res) => {
+    try {
+        const { description, location, reportedBy, likelihood, consequence, immediateAction } = req.body;
+
+        if (!description || !likelihood || !consequence) {
+            return res.status(400).json({ error: 'Description, likelihood and consequence are required' });
+        }
+
+        const l = Number(likelihood);
+        const c = Number(consequence);
+        const score = l * c;
+        const band = riskBand(score);
+        const id = Date.now();
+        const reportedTime = new Date().toISOString();
+
+        const result = await pool.query(
+            `INSERT INTO hazards (id, description, location, reported_by, likelihood, consequence, risk_score, risk_band, immediate_action, status, reported_time)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Open', $10)
+             RETURNING *`,
+            [id, description, location || null, reportedBy || null, l, c, score, band, immediateAction || null, reportedTime]
+        );
+
+        res.json(toHazardJson(result.rows[0]));
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to report hazard' });
+    }
+});
+
+// Close out a hazard
+app.put('/api/hazards/:id/close', async (req, res) => {
+    try {
+        const { closedAction, closedBy } = req.body;
+        const closedTime = new Date().toISOString();
+
+        const result = await pool.query(
+            `UPDATE hazards
+             SET status = 'Closed', closed_action = $1, closed_by = $2, closed_time = $3
+             WHERE id = $4
+             RETURNING *`,
+            [closedAction || null, closedBy || null, closedTime, req.params.id]
+        );
+
+        if (result.rows.length > 0) {
+            res.json(toHazardJson(result.rows[0]));
+        } else {
+            res.status(404).json({ error: 'Hazard not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to close out hazard' });
     }
 });
 
