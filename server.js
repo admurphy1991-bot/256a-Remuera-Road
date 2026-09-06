@@ -14,7 +14,10 @@ const pool = new Pool({
 });
 
 // Email alerts (near miss / observation notifications)
-// Configure via environment variables — see README notes for setup steps.
+// Recipients are hardcoded per site request. SMTP credentials still come from
+// environment variables — see README notes for setup steps (SendGrid recommended).
+const ALERT_RECIPIENTS = ['joshs@sansom.co.nz', 'shaun@sansom.co.nz'];
+
 let mailTransporter = null;
 if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     mailTransporter = nodemailer.createTransport({
@@ -27,18 +30,18 @@ if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
         }
     });
 } else {
-    console.warn('SMTP not configured — near miss/observation email alerts are disabled. Set SMTP_HOST, SMTP_USER, SMTP_PASS and ALERT_EMAIL_TO to enable.');
+    console.warn('SMTP not configured — near miss/observation email alerts are disabled. Set SMTP_HOST, SMTP_USER and SMTP_PASS to enable (see README).');
 }
 
 async function sendObservationAlert(obs) {
-    if (!mailTransporter || !process.env.ALERT_EMAIL_TO) return;
+    if (!mailTransporter) return;
 
     const typeLabel = obs.type === 'near_miss' ? 'Near Miss' : 'Observation';
 
     try {
         await mailTransporter.sendMail({
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
-            to: process.env.ALERT_EMAIL_TO,
+            to: ALERT_RECIPIENTS.join(', '),
             subject: `[256a Remuera Road] New ${typeLabel} Reported`,
             text: [
                 `A new ${typeLabel.toLowerCase()} has been reported on site (256a Remuera Road).`,
