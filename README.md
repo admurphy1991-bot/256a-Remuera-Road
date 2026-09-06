@@ -15,11 +15,27 @@ hazard ID reporting, and near miss / observation reporting.
 | `SMTP_USER` | For email alerts | SMTP auth username |
 | `SMTP_PASS` | For email alerts | SMTP auth password / API key |
 | `SMTP_FROM` | No | Defaults to `SMTP_USER` |
+| `MAKE_WEBHOOK_URL` | For webhook alerts | Make.com (or any) webhook URL |
 
 Near miss / observation reports are always emailed to `joshs@sansom.co.nz` and
 `shaun@sansom.co.nz` (hardcoded in `server.js`) whenever SMTP is configured.
 Without `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS` set, the app logs a warning on
 startup and reports are still saved — they just aren't emailed.
+
+Independently, if `MAKE_WEBHOOK_URL` is set, every new report is also POSTed
+as raw JSON to that URL (fields: `id`, `type`, `description`, `location`,
+`reportedBy`, `company`, `contact`, `reportedTime`). The two notification
+paths don't depend on each other — use one, the other, or both.
+
+### Setting up a Make.com webhook
+
+1. In Make.com, create a new scenario starting with a **Webhooks → Custom
+   webhook** trigger, and copy the generated URL.
+2. Set `MAKE_WEBHOOK_URL` to that URL as an environment variable on the host.
+3. Redeploy. Submit a test near miss / observation on the site — Make.com's
+   scenario editor will show the payload it received, which you can then use
+   to build whatever routing you want (email, Slack, SMS, a spreadsheet row,
+   etc.) with Make's own modules.
 
 ### Setting up email alerts with SendGrid (recommended)
 

@@ -59,6 +59,29 @@ async function sendObservationAlert(obs) {
     }
 }
 
+// Make.com (or any other) webhook — POSTs the raw observation JSON.
+// Set MAKE_WEBHOOK_URL to enable; independent of the email alert above.
+if (!process.env.MAKE_WEBHOOK_URL) {
+    console.warn('MAKE_WEBHOOK_URL not set — near miss/observation webhook notifications are disabled.');
+}
+
+async function sendObservationWebhook(obs) {
+    if (!process.env.MAKE_WEBHOOK_URL) return;
+
+    try {
+        const response = await fetch(process.env.MAKE_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(obs)
+        });
+        if (!response.ok) {
+            console.error(`Observation webhook responded with ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Failed to send observation webhook:', error);
+    }
+}
+
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -308,6 +331,7 @@ app.post('/api/observations', async (req, res) => {
 
         const saved = toObservationJson(result.rows[0]);
         sendObservationAlert(saved); // fire-and-forget, doesn't block the response
+        sendObservationWebhook(saved); // fire-and-forget, doesn't block the response
 
         res.json(saved);
     } catch (error) {
