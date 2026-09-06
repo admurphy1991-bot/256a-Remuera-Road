@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,6 +12,49 @@ const pool = new Pool({
         ? { rejectUnauthorized: false }
         : false
 });
+
+// Email alerts (near miss / observation notifications)
+// Configure via environment variables — see README notes for setup steps.
+let mailTransporter = null;
+if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    mailTransporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+        }
+    });
+} else {
+    console.warn('SMTP not configured — near miss/observation email alerts are disabled. Set SMTP_HOST, SMTP_USER, SMTP_PASS and ALERT_EMAIL_TO to enable.');
+}
+
+async function sendObservationAlert(obs) {
+    if (!mailTransporter || !process.env.ALERT_EMAIL_TO) return;
+
+    const typeLabel = obs.type === 'near_miss' ? 'Near Miss' : 'Observation';
+
+    try {
+        await mailTransporter.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: process.env.ALERT_EMAIL_TO,
+            subject: `[256a Remuera Road] New ${typeLabel} Reported`,
+            text: [
+                `A new ${typeLabel.toLowerCase()} has been reported on site (256a Remuera Road).`,
+                '',
+                `Description: ${obs.description}`,
+                `Location: ${obs.location || 'Not specified'}`,
+                `Reported by: ${obs.reportedBy || 'Anonymous'}`,
+                `Company: ${obs.company || 'Not provided'}`,
+                `Contact: ${obs.contact || 'Not provided'}`,
+                `Time: ${new Date(obs.reportedTime).toLocaleString()}`
+            ].join('\n')
+        });
+    } catch (error) {
+        console.error('Failed to send observation email alert:', error);
+    }
+}
 
 // Middleware
 app.use(express.json());
@@ -27,14 +71,9 @@ async function initDb() {
             site_safe_number TEXT,
             car_rego TEXT,
             sign_in_time TIMESTAMPTZ NOT NULL,
-            sign_out_time TIMESTAMPTZ,
-            hazards_acknowledged BOOLEAN NOT NULL DEFAULT FALSE,
-            hazards_acknowledged_time TIMESTAMPTZ
+            sign_out_time TIMESTAMPTZ
         )
     `);
-
-    await pool.query(`ALTER TABLE visitors ADD COLUMN IF NOT EXISTS hazards_acknowledged BOOLEAN NOT NULL DEFAULT FALSE`);
-    await pool.query(`ALTER TABLE visitors ADD COLUMN IF NOT EXISTS hazards_acknowledged_time TIMESTAMPTZ`);
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS hazards (
@@ -42,10 +81,7 @@ async function initDb() {
             description TEXT NOT NULL,
             location TEXT,
             reported_by TEXT,
-            likelihood INTEGER NOT NULL,
-            consequence INTEGER NOT NULL,
-            risk_score INTEGER NOT NULL,
-            risk_band TEXT NOT NULL,
+            severity TEXT NOT NULL,
             immediate_action TEXT,
             status TEXT NOT NULL DEFAULT 'Open',
             reported_time TIMESTAMPTZ NOT NULL,
@@ -54,15 +90,37 @@ async function initDb() {
             closed_time TIMESTAMPTZ
         )
     `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS observations (
+            id BIGINT PRIMARY KEY,
+            type TEXT NOT NULL,
+            description TEXT NOT NULL,
+            location TEXT,
+            reported_by TEXT,
+            company TEXT,
+            contact TEXT,
+            reported_time TIMESTAMPTZ NOT NULL
+        )
+    `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS hazard_acknowledgements (
+            id BIGINT PRIMARY KEY,
+            name TEXT NOT NULL,
+            company TEXT,
+            acknowledged_time TIMESTAMPTZ NOT NULL
+        )
+    `);
 }
 
-// Sansom risk matrix bands: Critical 15-25, High 8-12, Moderate 4-6, Low 1-3
-function riskBand(score) {
-    if (score >= 15) return 'Critical';
-    if (score >= 8) return 'High';
-    if (score >= 4) return 'Moderate';
-    return 'Low';
-}
+const SEVERITY_LABELS = {
+    near_miss: 'Near Miss',
+    minor: 'Minor Injury',
+    injury: 'Injury',
+    serious: 'Serious Injury',
+    fatality: 'Fatality'
+};
 
 function toVisitorJson(row) {
     return {
@@ -74,9 +132,7 @@ function toVisitorJson(row) {
         siteSafeNumber: row.site_safe_number,
         carRego: row.car_rego,
         signInTime: row.sign_in_time,
-        signOutTime: row.sign_out_time,
-        hazardsAcknowledged: row.hazards_acknowledged,
-        hazardsAcknowledgedTime: row.hazards_acknowledged_time
+        signOutTime: row.sign_out_time
     };
 }
 
@@ -93,18 +149,13 @@ app.get('/api/visitors', async (req, res) => {
 // Add new visitor (sign in)
 app.post('/api/visitors', async (req, res) => {
     try {
-        const { name, company, type, contact, siteSafeNumber, carRego, hazardsAcknowledged } = req.body;
-
-        if (!hazardsAcknowledged) {
-            return res.status(400).json({ error: 'You must acknowledge the site hazard board before signing in' });
-        }
-
+        const { name, company, type, contact, siteSafeNumber, carRego } = req.body;
         const id = Date.now();
         const signInTime = new Date().toISOString();
 
         const result = await pool.query(
-            `INSERT INTO visitors (id, name, company, type, contact, site_safe_number, car_rego, sign_in_time, hazards_acknowledged, hazards_acknowledged_time)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, $8)
+            `INSERT INTO visitors (id, name, company, type, contact, site_safe_number, car_rego, sign_in_time)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING *`,
             [id, name, company, type, contact || null, siteSafeNumber || null, carRego || null, signInTime]
         );
@@ -140,10 +191,8 @@ function toHazardJson(row) {
         description: row.description,
         location: row.location,
         reportedBy: row.reported_by,
-        likelihood: row.likelihood,
-        consequence: row.consequence,
-        riskScore: row.risk_score,
-        riskBand: row.risk_band,
+        severity: row.severity,
+        severityLabel: SEVERITY_LABELS[row.severity] || row.severity,
         immediateAction: row.immediate_action,
         status: row.status,
         reportedTime: row.reported_time,
@@ -166,24 +215,20 @@ app.get('/api/hazards', async (req, res) => {
 // Report a new hazard
 app.post('/api/hazards', async (req, res) => {
     try {
-        const { description, location, reportedBy, likelihood, consequence, immediateAction } = req.body;
+        const { description, location, reportedBy, severity, immediateAction } = req.body;
 
-        if (!description || !likelihood || !consequence) {
-            return res.status(400).json({ error: 'Description, likelihood and consequence are required' });
+        if (!description || !severity || !SEVERITY_LABELS[severity]) {
+            return res.status(400).json({ error: 'Description and a valid severity are required' });
         }
 
-        const l = Number(likelihood);
-        const c = Number(consequence);
-        const score = l * c;
-        const band = riskBand(score);
         const id = Date.now();
         const reportedTime = new Date().toISOString();
 
         const result = await pool.query(
-            `INSERT INTO hazards (id, description, location, reported_by, likelihood, consequence, risk_score, risk_band, immediate_action, status, reported_time)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Open', $10)
+            `INSERT INTO hazards (id, description, location, reported_by, severity, immediate_action, status, reported_time)
+             VALUES ($1, $2, $3, $4, $5, $6, 'Open', $7)
              RETURNING *`,
-            [id, description, location || null, reportedBy || null, l, c, score, band, immediateAction || null, reportedTime]
+            [id, description, location || null, reportedBy || null, severity, immediateAction || null, reportedTime]
         );
 
         res.json(toHazardJson(result.rows[0]));
@@ -213,6 +258,101 @@ app.put('/api/hazards/:id/close', async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ error: 'Failed to close out hazard' });
+    }
+});
+
+function toObservationJson(row) {
+    return {
+        id: Number(row.id),
+        type: row.type,
+        description: row.description,
+        location: row.location,
+        reportedBy: row.reported_by,
+        company: row.company,
+        contact: row.contact,
+        reportedTime: row.reported_time
+    };
+}
+
+// Get all near miss / observation reports
+app.get('/api/observations', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM observations ORDER BY reported_time DESC');
+        res.json(result.rows.map(toObservationJson));
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to read observations' });
+    }
+});
+
+// Submit a near miss / observation report (contractors & visitors)
+app.post('/api/observations', async (req, res) => {
+    try {
+        const { type, description, location, reportedBy, company, contact } = req.body;
+
+        if (!description || !type || (type !== 'near_miss' && type !== 'observation')) {
+            return res.status(400).json({ error: 'Description and a valid type are required' });
+        }
+
+        const id = Date.now();
+        const reportedTime = new Date().toISOString();
+
+        const result = await pool.query(
+            `INSERT INTO observations (id, type, description, location, reported_by, company, contact, reported_time)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING *`,
+            [id, type, description, location || null, reportedBy || null, company || null, contact || null, reportedTime]
+        );
+
+        const saved = toObservationJson(result.rows[0]);
+        sendObservationAlert(saved); // fire-and-forget, doesn't block the response
+
+        res.json(saved);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to submit report' });
+    }
+});
+
+function toAckJson(row) {
+    return {
+        id: Number(row.id),
+        name: row.name,
+        company: row.company,
+        acknowledgedTime: row.acknowledged_time
+    };
+}
+
+// Get all hazard board acknowledgements (for audit/CSV export)
+app.get('/api/hazard-board-ack', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM hazard_acknowledgements ORDER BY acknowledged_time DESC');
+        res.json(result.rows.map(toAckJson));
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to read acknowledgements' });
+    }
+});
+
+// Record a hazard board read & acknowledge (required before sign in)
+app.post('/api/hazard-board-ack', async (req, res) => {
+    try {
+        const { name, company } = req.body;
+
+        if (!name) {
+            return res.status(400).json({ error: 'Name is required' });
+        }
+
+        const id = Date.now();
+        const acknowledgedTime = new Date().toISOString();
+
+        const result = await pool.query(
+            `INSERT INTO hazard_acknowledgements (id, name, company, acknowledged_time)
+             VALUES ($1, $2, $3, $4)
+             RETURNING *`,
+            [id, name, company || null, acknowledgedTime]
+        );
+
+        res.json(toAckJson(result.rows[0]));
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to record acknowledgement' });
     }
 });
 
