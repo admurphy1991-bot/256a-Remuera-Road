@@ -684,6 +684,19 @@
 
                 <div class="divider"><span>ACKNOWLEDGE & CONTINUE</span></div>
 
+                <div class="search-section">
+                    <input
+                        type="text"
+                        id="ackVisitorSearch"
+                        class="search-input"
+                        placeholder="🔍 Returning visitor? Type your name to search..."
+                        autocomplete="off"
+                    >
+                    <div id="ackSearchResults" class="search-results"></div>
+                </div>
+
+                <div class="divider"><span>OR ENTER DETAILS MANUALLY</span></div>
+
                 <form id="hazardAckForm">
                     <div class="form-group">
                         <label for="ackName">Full Name *</label>
@@ -1173,6 +1186,10 @@
                 searchVisitors(e.target.value);
             });
 
+            document.getElementById('ackVisitorSearch').addEventListener('input', (e) => {
+                searchAckVisitors(e.target.value);
+            });
+
             refreshInterval = setInterval(() => {
                 const activeTab = document.querySelector('.tab-content.active');
                 if (activeTab && (activeTab.id === 'signout' || activeTab.id === 'register')) {
@@ -1233,13 +1250,66 @@
             document.getElementById('signinUnlocked').style.display = 'none';
             const ackForm = document.getElementById('hazardAckForm');
             if (ackForm) ackForm.reset();
+            selectedAckVisitor = null;
+            document.getElementById('ackVisitorSearch').value = '';
+            document.getElementById('ackSearchResults').innerHTML = '';
         }
 
-        function unlockSignin(name, company) {
+        function unlockSignin(visitorData) {
             document.getElementById('signinLocked').style.display = 'none';
             document.getElementById('signinUnlocked').style.display = 'block';
-            if (name) document.getElementById('name').value = name;
-            if (company) document.getElementById('company').value = company;
+            if (visitorData) {
+                if (visitorData.name) document.getElementById('name').value = visitorData.name;
+                if (visitorData.company) document.getElementById('company').value = visitorData.company;
+                if (visitorData.type) document.getElementById('type').value = visitorData.type;
+                if (visitorData.contact) document.getElementById('contact').value = visitorData.contact;
+                if (visitorData.siteSafeNumber) document.getElementById('siteSafeNumber').value = visitorData.siteSafeNumber;
+                if (visitorData.carRego) document.getElementById('carRego').value = visitorData.carRego;
+            }
+        }
+
+        // Returning-visitor search on the Hazard Board acknowledgement step
+        let selectedAckVisitor = null;
+
+        function searchAckVisitors(searchTerm) {
+            selectedAckVisitor = null;
+            if (!searchTerm || searchTerm.length < 2) {
+                document.getElementById('ackSearchResults').innerHTML = '';
+                return;
+            }
+
+            const term = searchTerm.toLowerCase();
+            const results = previousVisitors.filter(v =>
+                v.name.toLowerCase().includes(term) ||
+                v.company.toLowerCase().includes(term)
+            ).slice(0, 10);
+
+            const resultsDiv = document.getElementById('ackSearchResults');
+
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<div style="padding: 15px; text-align: center; color: #a0aec0;">No matching visitors found</div>';
+                return;
+            }
+
+            resultsDiv.innerHTML = results.map(v => `
+                <div class="search-result-item" onclick="selectAckVisitor(${v.id})">
+                    <div class="search-result-name">${v.name}</div>
+                    <div class="search-result-details">
+                        ${v.company} • ${v.type}${v.siteSafeNumber ? ` • Site Safe: ${v.siteSafeNumber}` : ''}${v.carRego ? ` • ${v.carRego}` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectAckVisitor(visitorId) {
+            const visitor = previousVisitors.find(v => v.id === visitorId);
+            if (!visitor) return;
+
+            selectedAckVisitor = visitor;
+            document.getElementById('ackName').value = visitor.name;
+            document.getElementById('ackCompany').value = visitor.company;
+            document.getElementById('ackVisitorSearch').value = '';
+            document.getElementById('ackSearchResults').innerHTML = '';
         }
 
         document.getElementById('signinForm').addEventListener('submit', async function(e) {
@@ -1284,7 +1354,10 @@
                 });
                 if (!response.ok) throw new Error('Failed to acknowledge');
 
-                unlockSignin(name, company);
+                const isSameVisitor = selectedAckVisitor &&
+                    selectedAckVisitor.name === name &&
+                    selectedAckVisitor.company === company;
+                unlockSignin(isSameVisitor ? selectedAckVisitor : { name, company });
                 showAlert(`✓ Thanks ${name} — you can now sign in`, 'success');
 
                 document.getElementById('signin').classList.add('active');
@@ -1374,7 +1447,7 @@
             const alert = document.createElement('div');
             alert.className = `alert alert-${type}`;
             alert.textContent = message;
-            document.getElementById('signin').insertBefore(alert, document.getElementById('signinForm'));
+            document.getElementById('signin').insertBefore(alert, document.getElementById('signinLocked'));
             
             setTimeout(() => alert.remove(), 3000);
         }
