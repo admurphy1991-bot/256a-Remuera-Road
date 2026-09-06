@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Site Sign In/Out - Sansoms @ 456a Remuera Road</title>
+    <title>Site Sign In/Out - Sansoms @ 256a Remuera Road</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * {
@@ -62,28 +62,26 @@
         }
 
         .tab-btn {
-            flex: 1 1 30%;
-            min-width: 0;
-            padding: 10px 4px;
+            flex: 1 1 120px;
+            padding: 10px 6px;
             border: none;
             background: #e2e8f0;
             color: #4a5568;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             border-radius: 8px;
             transition: all 0.3s;
+            white-space: normal;
             line-height: 1.3;
+            text-align: center;
         }
 
         @media (max-width: 480px) {
-            .tab-buttons {
-                gap: 6px;
-            }
-
             .tab-btn {
+                flex-basis: 45%;
                 font-size: 12px;
-                padding: 8px 2px;
+                padding: 9px 4px;
             }
         }
 
@@ -411,25 +409,14 @@
             line-height: 1.6;
         }
 
-        .risk-badge {
+        .severity-badge {
             display: inline-block;
             border-radius: 4px;
             padding: 3px 10px;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
             margin: 4px 0;
             color: white;
-        }
-
-        .risk-critical { background: #c53030; }
-        .risk-high { background: #ed8936; }
-        .risk-moderate { background: #d69e2e; }
-        .risk-low { background: #38a169; }
-
-        .risk-score-preview {
-            margin-top: 8px;
-            font-weight: 600;
-            font-size: 14px;
         }
 
         .close-out-btn {
@@ -461,171 +448,110 @@
         .status-open { background: #fed7d7; color: #742a2a; }
         .status-closed { background: #c6f6d5; color: #22543d; }
 
-        .risk-picker {
+        .severity-picker {
             display: flex;
             gap: 8px;
             margin-top: 6px;
         }
 
-        .risk-picker-btn {
+        .severity-btn {
             flex: 1;
-            min-height: 74px;
+            min-height: 80px;
             border: 3px solid transparent;
             border-radius: 10px;
             padding: 10px 4px 8px;
             cursor: pointer;
             color: white;
-            font-weight: 800;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: center;
             gap: 6px;
             transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
         }
 
-        .risk-picker-btn:hover {
+        .severity-btn:hover {
             transform: translateY(-2px);
         }
 
-        .risk-picker-btn.selected {
+        .severity-btn.selected {
             border-color: #2d3748;
-            transform: scale(1.06);
+            transform: scale(1.08);
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
-        .risk-picker-btn .rp-number {
-            font-size: 20px;
-            line-height: 1;
+        .lock-notice {
+            text-align: center;
+            background: #fffbea;
+            border: 2px dashed #ecc94b;
+            border-radius: 12px;
+            padding: 30px 20px;
         }
 
-        .risk-picker-btn .rp-bar {
-            width: 14px;
-            background: rgba(255,255,255,0.9);
-            border-radius: 3px;
-        }
-
-        .risk-picker-btn .rp-triangle {
-            line-height: 1;
-            color: rgba(255,255,255,0.9);
-        }
-
-        .rp-1 { background: #38a169; }
-        .rp-2 { background: #86ac2b; }
-        .rp-3 { background: #ecc94b; color: #2d3748; }
-        .rp-4 { background: #ed8936; }
-        .rp-5 { background: #e53e3e; }
-
-        .rp-3 .rp-triangle { color: rgba(45,55,72,0.85); }
-
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.6);
+        .checkbox-group label {
+            display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 20px;
-            z-index: 1000;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal-box {
-            background: white;
-            border-radius: 15px;
-            max-width: 500px;
-            width: 100%;
-            max-height: 85vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-        }
-
-        .modal-header {
-            background: #c53030;
-            color: white;
-            padding: 20px 25px;
-            border-radius: 15px 15px 0 0;
-        }
-
-        .modal-header h2 {
-            font-size: 20px;
-        }
-
-        .modal-body {
-            padding: 20px 25px;
-            overflow-y: auto;
-        }
-
-        .modal-footer {
-            padding: 20px 25px;
-            border-top: 2px solid #e2e8f0;
-        }
-
-        .hazard-board-item {
-            background: #fff5f5;
-            border-left: 4px solid #f56565;
-            padding: 12px 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .hazard-board-desc {
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 4px;
-        }
-
-        .ack-checkbox-row {
-            display: flex;
-            align-items: flex-start;
             gap: 10px;
-            margin-bottom: 15px;
+            font-weight: 500;
             cursor: pointer;
         }
 
-        .ack-checkbox-row input[type="checkbox"] {
+        .checkbox-group input[type="checkbox"] {
             width: 22px;
             height: 22px;
             flex-shrink: 0;
-            margin-top: 2px;
-            cursor: pointer;
         }
 
-        .ack-checkbox-row span {
-            font-weight: 600;
-            color: #2d3748;
-            font-size: 15px;
-        }
-
-        .modal-footer .btn {
-            margin-top: 0;
-        }
-
-        .modal-btn-row {
+        .obs-type-picker {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            margin-top: 6px;
         }
 
-        .btn-cancel {
-            background: #e2e8f0;
+        .obs-type-btn {
+            flex: 1;
+            min-height: 80px;
+            border: 3px solid #e2e8f0;
+            background: white;
+            border-radius: 10px;
+            padding: 10px 4px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-weight: 600;
             color: #4a5568;
+            transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
         }
 
-        .btn-cancel:hover {
-            background: #cbd5e0;
+        .obs-type-btn:hover {
+            transform: translateY(-2px);
         }
 
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
+        .obs-type-btn.selected {
+            border-color: #1f8fe8;
+            background: #ebf8ff;
+            color: #1f8fe8;
+            box-shadow: 0 4px 12px rgba(31,143,232,0.25);
         }
+
+        .obs-type-btn .obs-emoji {
+            font-size: 30px;
+            line-height: 1;
+        }
+
+        .severity-btn .sv-emoji {
+            font-size: 30px;
+            line-height: 1;
+        }
+
+        .sv-near_miss { background: #38a169; }
+        .sv-minor { background: #a3b81c; }
+        .sv-injury { background: #ed8936; }
+        .sv-serious { background: #e53e3e; }
+        .sv-fatality { background: #4a1010; }
 
         @media print {
             body {
@@ -667,12 +593,14 @@
         <div class="header">
             <img src="sansom-logo.jpg" alt="Sansoms Logo" class="header-logo">
             <h1>🏗️ Site Visitor Management</h1>
-            <p>Sansoms @ 456a Remuera Road</p>
+            <p>Sansoms @ 256a Remuera Road</p>
         </div>
 
         <div class="content">
             <div class="tab-buttons">
                 <button class="tab-btn active" onclick="showTab('signin')">Sign In</button>
+                <button class="tab-btn" onclick="showTab('hazardboard')">🪧 Hazard Board</button>
+                <button class="tab-btn" onclick="showTab('nearmiss')">👀 Near Miss / Obs</button>
                 <button class="tab-btn" onclick="showTab('signout')">Sign Out</button>
                 <button class="tab-btn" onclick="showTab('register')">View Register</button>
                 <button class="tab-btn" onclick="showTab('hazards')">⚠️ Hazard ID</button>
@@ -682,57 +610,142 @@
             <!-- Sign In Tab -->
             <div id="signin" class="tab-content active">
                 <h2 style="margin-bottom: 20px; color: #2d3748;">Sign In</h2>
-                
-                <!-- Quick Search for Returning Visitors -->
-                <div class="search-section">
-                    <input 
-                        type="text" 
-                        id="visitorSearch" 
-                        class="search-input" 
-                        placeholder="🔍 Returning visitor? Type your name to search..."
-                        autocomplete="off"
-                    >
-                    <div id="searchResults" class="search-results"></div>
+
+                <div id="signinLocked" class="lock-notice">
+                    <div style="font-size: 40px;">🪧</div>
+                    <p style="font-weight: 700; color: #2d3748; margin: 10px 0;">
+                        Please read and acknowledge the Site Hazard Board before signing in.
+                    </p>
+                    <button type="button" class="btn btn-primary" onclick="showTab('hazardboard')">Go to Hazard Board</button>
                 </div>
 
-                <div class="divider">
-                    <span>OR SIGN IN MANUALLY</span>
-                </div>
+                <div id="signinUnlocked" style="display: none;">
+                    <!-- Quick Search for Returning Visitors -->
+                    <div class="search-section">
+                        <input 
+                            type="text" 
+                            id="visitorSearch" 
+                            class="search-input" 
+                            placeholder="🔍 Returning visitor? Type your name to search..."
+                            autocomplete="off"
+                        >
+                        <div id="searchResults" class="search-results"></div>
+                    </div>
 
-                <form id="signinForm">
+                    <div class="divider">
+                        <span>OR SIGN IN MANUALLY</span>
+                    </div>
+
+                    <form id="signinForm">
+                        <div class="form-group">
+                            <label for="name">Full Name *</label>
+                            <input type="text" id="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="company">Company *</label>
+                            <input type="text" id="company" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="type">Visitor Type *</label>
+                            <select id="type" required>
+                                <option value="">-- Select --</option>
+                                <option value="Contractor">Contractor</option>
+                                <option value="Client">Client</option>
+                                <option value="Visitor">Visitor</option>
+                                <option value="Supplier">Supplier</option>
+                                <option value="Inspector">Inspector</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="contact">Contact Number</label>
+                            <input type="tel" id="contact">
+                        </div>
+                        <div class="form-group">
+                            <label for="siteSafeNumber">Site Safe Number</label>
+                            <input type="text" id="siteSafeNumber" placeholder="e.g. SS123456">
+                        </div>
+                        <div class="form-group">
+                            <label for="carRego">Car Registration (optional)</label>
+                            <input type="text" id="carRego" placeholder="e.g. ABC123">
+                        </div>
+                        <button type="submit" class="btn btn-primary">✓ Sign In</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Hazard Board Tab -->
+            <div id="hazardboard" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: #2d3748;">🪧 Site Hazard Board</h2>
+                <p style="color: #4a5568; margin-bottom: 16px;">
+                    Read the current site hazards below. All contractors and visitors must acknowledge before signing in.
+                </p>
+                <div id="hazardBoardList"></div>
+
+                <div class="divider"><span>ACKNOWLEDGE & CONTINUE</span></div>
+
+                <form id="hazardAckForm">
                     <div class="form-group">
-                        <label for="name">Full Name *</label>
-                        <input type="text" id="name" required>
+                        <label for="ackName">Full Name *</label>
+                        <input type="text" id="ackName" required>
                     </div>
                     <div class="form-group">
-                        <label for="company">Company *</label>
-                        <input type="text" id="company" required>
+                        <label for="ackCompany">Company *</label>
+                        <input type="text" id="ackCompany" required>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="ackCheckbox" required>
+                            I have read and understood the site hazards listed above
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">✓ Acknowledge & Continue to Sign In</button>
+                </form>
+            </div>
+
+            <!-- Near Miss / Observation Tab -->
+            <div id="nearmiss" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: #2d3748;">👀 Near Miss / Observation</h2>
+                <p style="color: #4a5568; margin-bottom: 16px;">
+                    Seen something that could have gone wrong, or something worth flagging? This goes straight to the HSEQ team.
+                </p>
+
+                <form id="observationForm">
+                    <div class="form-group">
+                        <label>Type *</label>
+                        <div class="obs-type-picker" id="obsTypePicker">
+                            <button type="button" class="obs-type-btn" data-value="near_miss" onclick="selectObsType('near_miss', this)">
+                                <span class="obs-emoji">👀</span>
+                                <span>Near Miss</span>
+                            </button>
+                            <button type="button" class="obs-type-btn" data-value="observation" onclick="selectObsType('observation', this)">
+                                <span class="obs-emoji">📝</span>
+                                <span>Observation</span>
+                            </button>
+                        </div>
+                        <input type="hidden" id="obsType">
                     </div>
                     <div class="form-group">
-                        <label for="type">Visitor Type *</label>
-                        <select id="type" required>
-                            <option value="">-- Select --</option>
-                            <option value="Contractor">Contractor</option>
-                            <option value="Client">Client</option>
-                            <option value="Visitor">Visitor</option>
-                            <option value="Supplier">Supplier</option>
-                            <option value="Inspector">Inspector</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <label for="obsDescription">What did you see? *</label>
+                        <textarea id="obsDescription" required placeholder="Describe what happened or what you noticed"></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="contact">Contact Number</label>
-                        <input type="tel" id="contact">
+                        <label for="obsLocation">Location on Site</label>
+                        <input type="text" id="obsLocation" placeholder="e.g. Level 2 balcony">
                     </div>
                     <div class="form-group">
-                        <label for="siteSafeNumber">Site Safe Number</label>
-                        <input type="text" id="siteSafeNumber" placeholder="e.g. SS123456">
+                        <label for="obsReportedBy">Your Name (optional)</label>
+                        <input type="text" id="obsReportedBy" placeholder="Leave blank to report anonymously">
                     </div>
                     <div class="form-group">
-                        <label for="carRego">Car Registration (optional)</label>
-                        <input type="text" id="carRego" placeholder="e.g. ABC123">
+                        <label for="obsCompany">Company (optional)</label>
+                        <input type="text" id="obsCompany">
                     </div>
-                    <button type="submit" class="btn btn-primary">✓ Sign In</button>
+                    <div class="form-group">
+                        <label for="obsContact">Contact Number (optional)</label>
+                        <input type="tel" id="obsContact">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Report</button>
                 </form>
             </div>
 
@@ -777,58 +790,26 @@
                         <input type="text" id="hazardReportedBy" required placeholder="Full name">
                     </div>
                     <div class="form-group">
-                        <label for="hazardLikelihood">Likelihood *</label>
-                        <div class="risk-picker" id="likelihoodPicker">
-                            <button type="button" class="risk-picker-btn rp-1" data-value="1" onclick="selectRiskValue('likelihood',1,this)">
-                                <span class="rp-number">1</span>
-                                <span class="rp-bar" style="height:8px;"></span>
+                        <label for="hazardSeverity">Outcome *</label>
+                        <div class="severity-picker" id="severityPicker">
+                            <button type="button" class="severity-btn sv-near_miss" data-value="near_miss" title="Near Miss" onclick="selectSeverity('near_miss',this)">
+                                <span class="sv-emoji">😌</span>
                             </button>
-                            <button type="button" class="risk-picker-btn rp-2" data-value="2" onclick="selectRiskValue('likelihood',2,this)">
-                                <span class="rp-number">2</span>
-                                <span class="rp-bar" style="height:16px;"></span>
+                            <button type="button" class="severity-btn sv-minor" data-value="minor" title="Minor Injury" onclick="selectSeverity('minor',this)">
+                                <span class="sv-emoji">🤕</span>
                             </button>
-                            <button type="button" class="risk-picker-btn rp-3" data-value="3" onclick="selectRiskValue('likelihood',3,this)">
-                                <span class="rp-number">3</span>
-                                <span class="rp-bar" style="height:24px;"></span>
+                            <button type="button" class="severity-btn sv-injury" data-value="injury" title="Injury" onclick="selectSeverity('injury',this)">
+                                <span class="sv-emoji">🚑</span>
                             </button>
-                            <button type="button" class="risk-picker-btn rp-4" data-value="4" onclick="selectRiskValue('likelihood',4,this)">
-                                <span class="rp-number">4</span>
-                                <span class="rp-bar" style="height:32px;"></span>
+                            <button type="button" class="severity-btn sv-serious" data-value="serious" title="Serious Injury" onclick="selectSeverity('serious',this)">
+                                <span class="sv-emoji">🚨</span>
                             </button>
-                            <button type="button" class="risk-picker-btn rp-5" data-value="5" onclick="selectRiskValue('likelihood',5,this)">
-                                <span class="rp-number">5</span>
-                                <span class="rp-bar" style="height:40px;"></span>
+                            <button type="button" class="severity-btn sv-fatality" data-value="fatality" title="Fatality" onclick="selectSeverity('fatality',this)">
+                                <span class="sv-emoji">💀</span>
                             </button>
                         </div>
-                        <input type="hidden" id="hazardLikelihood">
+                        <input type="hidden" id="hazardSeverity">
                     </div>
-                    <div class="form-group">
-                        <label for="hazardConsequence">Consequence *</label>
-                        <div class="risk-picker" id="consequencePicker">
-                            <button type="button" class="risk-picker-btn rp-1" data-value="1" onclick="selectRiskValue('consequence',1,this)">
-                                <span class="rp-number">1</span>
-                                <span class="rp-triangle" style="font-size:12px;">▲</span>
-                            </button>
-                            <button type="button" class="risk-picker-btn rp-2" data-value="2" onclick="selectRiskValue('consequence',2,this)">
-                                <span class="rp-number">2</span>
-                                <span class="rp-triangle" style="font-size:16px;">▲</span>
-                            </button>
-                            <button type="button" class="risk-picker-btn rp-3" data-value="3" onclick="selectRiskValue('consequence',3,this)">
-                                <span class="rp-number">3</span>
-                                <span class="rp-triangle" style="font-size:20px;">▲</span>
-                            </button>
-                            <button type="button" class="risk-picker-btn rp-4" data-value="4" onclick="selectRiskValue('consequence',4,this)">
-                                <span class="rp-number">4</span>
-                                <span class="rp-triangle" style="font-size:24px;">▲</span>
-                            </button>
-                            <button type="button" class="risk-picker-btn rp-5" data-value="5" onclick="selectRiskValue('consequence',5,this)">
-                                <span class="rp-number">5</span>
-                                <span class="rp-triangle" style="font-size:28px;">▲</span>
-                            </button>
-                        </div>
-                        <input type="hidden" id="hazardConsequence">
-                    </div>
-                    <div id="riskScorePreview" class="risk-score-preview"></div>
                     <div class="form-group">
                         <label for="hazardAction">Immediate Action Taken</label>
                         <textarea id="hazardAction" placeholder="e.g. Area barricaded, PPE issued, work stopped"></textarea>
@@ -867,29 +848,6 @@
                     <strong>Current URL:</strong> <span id="currentUrl"></span>
                 </p>
                 <button onclick="window.print()" class="btn btn-secondary">🖨️ Print QR Code</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Hazard Board Acknowledgement Modal -->
-    <div id="hazardBoardModal" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h2>⚠️ Site Hazard Board</h2>
-            </div>
-            <div class="modal-body">
-                <p style="margin-bottom: 15px; color: #4a5568;">Please read the current site hazards below before signing in.</p>
-                <div id="hazardBoardList"></div>
-            </div>
-            <div class="modal-footer">
-                <label class="ack-checkbox-row" for="hazardAckCheckbox">
-                    <input type="checkbox" id="hazardAckCheckbox" onchange="document.getElementById('hazardAckContinueBtn').disabled = !this.checked">
-                    <span>I have read and understood the hazards above and agree to work safely on site.</span>
-                </label>
-                <div class="modal-btn-row">
-                    <button type="button" class="btn btn-cancel" onclick="closeHazardBoard()">Cancel</button>
-                    <button type="button" id="hazardAckContinueBtn" class="btn btn-primary" disabled onclick="confirmHazardAcknowledgement()">✓ Acknowledge & Sign In</button>
-                </div>
             </div>
         </div>
     </div>
@@ -958,41 +916,27 @@
         // Hazard ID Functions
         let hazards = [];
 
-        function riskBandFor(score) {
-            if (score >= 15) return { band: 'Critical', cls: 'risk-critical' };
-            if (score >= 8) return { band: 'High', cls: 'risk-high' };
-            if (score >= 4) return { band: 'Moderate', cls: 'risk-moderate' };
-            return { band: 'Low', cls: 'risk-low' };
+        const SEVERITY_LEVELS = {
+            near_miss: { label: 'Near Miss',      emoji: '😌', cls: 'sv-near_miss' },
+            minor:     { label: 'Minor Injury',   emoji: '🤕', cls: 'sv-minor' },
+            injury:    { label: 'Injury',         emoji: '🚑', cls: 'sv-injury' },
+            serious:   { label: 'Serious Injury', emoji: '🚨', cls: 'sv-serious' },
+            fatality:  { label: 'Fatality',       emoji: '💀', cls: 'sv-fatality' }
+        };
+
+        function severityInfo(key) {
+            return SEVERITY_LEVELS[key] || { label: key || 'Unknown', emoji: '❓', cls: '' };
         }
 
-        function selectRiskValue(field, value, btnEl) {
-            const hiddenId = field === 'likelihood' ? 'hazardLikelihood' : 'hazardConsequence';
-            const pickerId = field === 'likelihood' ? 'likelihoodPicker' : 'consequencePicker';
-
-            document.getElementById(hiddenId).value = value;
-            document.querySelectorAll(`#${pickerId} .risk-picker-btn`).forEach(b => b.classList.remove('selected'));
+        function selectSeverity(value, btnEl) {
+            document.getElementById('hazardSeverity').value = value;
+            document.querySelectorAll('#severityPicker .severity-btn').forEach(b => b.classList.remove('selected'));
             btnEl.classList.add('selected');
-            updateRiskPreview();
         }
 
-        function clearRiskPickers() {
-            document.getElementById('hazardLikelihood').value = '';
-            document.getElementById('hazardConsequence').value = '';
-            document.querySelectorAll('.risk-picker-btn.selected').forEach(b => b.classList.remove('selected'));
-            document.getElementById('riskScorePreview').textContent = '';
-        }
-
-        function updateRiskPreview() {
-            const l = Number(document.getElementById('hazardLikelihood').value);
-            const c = Number(document.getElementById('hazardConsequence').value);
-            const preview = document.getElementById('riskScorePreview');
-            if (!l || !c) {
-                preview.textContent = '';
-                return;
-            }
-            const score = l * c;
-            const { band, cls } = riskBandFor(score);
-            preview.innerHTML = `Risk Score: ${score} — <span class="risk-badge ${cls}">${band}</span>`;
+        function clearSeverityPicker() {
+            document.getElementById('hazardSeverity').value = '';
+            document.querySelectorAll('.severity-btn.selected').forEach(b => b.classList.remove('selected'));
         }
 
         async function fetchHazards() {
@@ -1001,10 +945,37 @@
                 if (!response.ok) throw new Error('Failed to fetch');
                 hazards = await response.json();
                 updateHazardDisplay();
+                renderHazardBoard();
             } catch (error) {
                 console.error('Error fetching hazards:', error);
                 showAlert('Failed to load hazard register', 'error');
             }
+        }
+
+        function renderHazardBoard() {
+            const boardDiv = document.getElementById('hazardBoardList');
+            if (!boardDiv) return;
+
+            const openHazards = hazards.filter(h => h.status !== 'Closed');
+
+            if (openHazards.length === 0) {
+                boardDiv.innerHTML = '<div class="empty-state">No open hazards currently logged for this site.</div>';
+                return;
+            }
+
+            boardDiv.innerHTML = openHazards.map(h => {
+                const sev = severityInfo(h.severity);
+                return `
+                    <div class="hazard-card">
+                        <div class="hazard-desc">${h.description}</div>
+                        <div class="hazard-details">
+                            <span class="severity-badge ${sev.cls}">${sev.emoji} ${sev.label}</span><br>
+                            📍 ${h.location || 'Not specified'}
+                            ${h.immediateAction ? `<br>Current control: ${h.immediateAction}` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         async function reportHazard(hazardData) {
@@ -1058,7 +1029,7 @@
             }
 
             listDiv.innerHTML = hazards.map(h => {
-                const { cls } = riskBandFor(h.riskScore);
+                const sev = severityInfo(h.severity);
                 const isClosed = h.status === 'Closed';
                 return `
                     <div class="hazard-card ${isClosed ? 'closed' : ''}">
@@ -1067,7 +1038,7 @@
                             <span class="status-tag ${isClosed ? 'status-closed' : 'status-open'}">${h.status}</span>
                         </div>
                         <div class="hazard-details">
-                            <span class="risk-badge ${cls}">${h.riskBand} (${h.riskScore})</span><br>
+                            <span class="severity-badge ${sev.cls}">${sev.emoji} ${sev.label}</span><br>
                             📍 ${h.location || 'Not specified'}<br>
                             Reported by ${h.reportedBy || 'Unknown'} — ${new Date(h.reportedTime).toLocaleString()}
                             ${h.immediateAction ? `<br>Immediate action: ${h.immediateAction}` : ''}
@@ -1087,15 +1058,12 @@
             }
 
             const csv = [
-                ['Description', 'Location', 'Reported By', 'Likelihood', 'Consequence', 'Risk Score', 'Risk Band', 'Immediate Action', 'Status', 'Reported Time', 'Closed Action', 'Closed By', 'Closed Time'],
+                ['Description', 'Location', 'Reported By', 'Outcome', 'Immediate Action', 'Status', 'Reported Time', 'Closed Action', 'Closed By', 'Closed Time'],
                 ...hazards.map(h => [
                     h.description,
                     h.location || '',
                     h.reportedBy || '',
-                    h.likelihood,
-                    h.consequence,
-                    h.riskScore,
-                    h.riskBand,
+                    severityInfo(h.severity).label,
                     h.immediateAction || '',
                     h.status,
                     new Date(h.reportedTime).toLocaleString(),
@@ -1109,68 +1077,9 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `hazard-register-456a-remuera-road-${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = `hazard-register-256a-remuera-road-${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
             window.URL.revokeObjectURL(url);
-        }
-
-        // Hazard Board Acknowledgement (required before sign in)
-        let pendingVisitorData = null;
-
-        async function openHazardBoard(visitorData) {
-            pendingVisitorData = visitorData;
-            await fetchHazards();
-            renderHazardBoardModal();
-            document.getElementById('hazardAckCheckbox').checked = false;
-            document.getElementById('hazardAckContinueBtn').disabled = true;
-            document.getElementById('hazardBoardModal').classList.add('active');
-        }
-
-        function renderHazardBoardModal() {
-            const listDiv = document.getElementById('hazardBoardList');
-            const openHazards = hazards.filter(h => h.status !== 'Closed');
-
-            if (openHazards.length === 0) {
-                listDiv.innerHTML = '<div class="empty-state">No hazards currently identified on site.</div>';
-                return;
-            }
-
-            listDiv.innerHTML = openHazards.map(h => {
-                const { cls } = riskBandFor(h.riskScore);
-                return `
-                    <div class="hazard-board-item">
-                        <div class="hazard-board-desc">
-                            ${h.description}
-                            <span class="risk-badge ${cls}">${h.riskBand}</span>
-                        </div>
-                        📍 ${h.location || 'Not specified'}
-                        ${h.immediateAction ? `<br>Current control: ${h.immediateAction}` : ''}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function closeHazardBoard() {
-            pendingVisitorData = null;
-            document.getElementById('hazardBoardModal').classList.remove('active');
-        }
-
-        async function confirmHazardAcknowledgement() {
-            if (!document.getElementById('hazardAckCheckbox').checked || !pendingVisitorData) return;
-
-            const visitorData = { ...pendingVisitorData, hazardsAcknowledged: true };
-            const success = await addVisitor(visitorData);
-
-            document.getElementById('hazardBoardModal').classList.remove('active');
-
-            if (success) {
-                showAlert(`✓ ${visitorData.name} signed in successfully!`, 'success');
-                document.getElementById('signinForm').reset();
-                document.getElementById('visitorSearch').value = '';
-                document.getElementById('searchResults').innerHTML = '';
-            }
-
-            pendingVisitorData = null;
         }
 
         // Visitor Search Functionality
@@ -1226,7 +1135,7 @@
         async function quickSignIn(visitorId) {
             const visitor = previousVisitors.find(v => v.id === visitorId);
             if (!visitor) return;
-
+            
             const visitorData = {
                 name: visitor.name,
                 company: visitor.company,
@@ -1235,8 +1144,14 @@
                 siteSafeNumber: visitor.siteSafeNumber || '',
                 carRego: visitor.carRego || ''
             };
-
-            await openHazardBoard(visitorData);
+            
+            const success = await addVisitor(visitorData);
+            
+            if (success) {
+                document.getElementById('visitorSearch').value = '';
+                document.getElementById('searchResults').innerHTML = '';
+                showAlert(`✓ ${visitor.name} signed in successfully!`, 'success');
+            }
         }
 
         // Initialize
@@ -1307,14 +1222,29 @@
             if (tabName === 'signout' || tabName === 'register') {
                 fetchVisitors();
             }
-            if (tabName === 'hazards') {
+            if (tabName === 'hazards' || tabName === 'hazardboard') {
                 fetchHazards();
             }
         }
 
+        // Sign-in lock (gated behind Hazard Board acknowledgement)
+        function lockSignin() {
+            document.getElementById('signinLocked').style.display = 'block';
+            document.getElementById('signinUnlocked').style.display = 'none';
+            const ackForm = document.getElementById('hazardAckForm');
+            if (ackForm) ackForm.reset();
+        }
+
+        function unlockSignin(name, company) {
+            document.getElementById('signinLocked').style.display = 'none';
+            document.getElementById('signinUnlocked').style.display = 'block';
+            if (name) document.getElementById('name').value = name;
+            if (company) document.getElementById('company').value = company;
+        }
+
         document.getElementById('signinForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-
+            
             const visitorData = {
                 name: document.getElementById('name').value,
                 company: document.getElementById('company').value,
@@ -1323,18 +1253,100 @@
                 siteSafeNumber: document.getElementById('siteSafeNumber').value,
                 carRego: document.getElementById('carRego').value
             };
+            
+            const success = await addVisitor(visitorData);
+            
+            if (success) {
+                showAlert(`✓ ${visitorData.name} signed in successfully!`, 'success');
+                this.reset();
+                lockSignin();
+            }
+        });
 
-            await openHazardBoard(visitorData);
+        // Hazard Board acknowledgement — required before sign-in unlocks
+        document.getElementById('hazardAckForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('ackName').value;
+            const company = document.getElementById('ackCompany').value;
+            const checked = document.getElementById('ackCheckbox').checked;
+
+            if (!checked) {
+                showAlert('⚠️ You must tick the box to confirm you have read the hazards', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/hazard-board-ack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, company })
+                });
+                if (!response.ok) throw new Error('Failed to acknowledge');
+
+                unlockSignin(name, company);
+                showAlert(`✓ Thanks ${name} — you can now sign in`, 'success');
+
+                document.getElementById('signin').classList.add('active');
+                document.getElementById('hazardboard').classList.remove('active');
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector('.tab-btn[onclick*="signin"]').classList.add('active');
+            } catch (error) {
+                console.error('Error recording acknowledgement:', error);
+                showAlert('Failed to record acknowledgement — please try again', 'error');
+            }
+        });
+
+        // Near Miss / Observation reporting
+        function selectObsType(value, btnEl) {
+            document.getElementById('obsType').value = value;
+            document.querySelectorAll('#obsTypePicker .obs-type-btn').forEach(b => b.classList.remove('selected'));
+            btnEl.classList.add('selected');
+        }
+
+        document.getElementById('observationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const type = document.getElementById('obsType').value;
+            if (!type) {
+                showAlert('⚠️ Select Near Miss or Observation', 'error');
+                return;
+            }
+
+            const obsData = {
+                type: type,
+                description: document.getElementById('obsDescription').value,
+                location: document.getElementById('obsLocation').value,
+                reportedBy: document.getElementById('obsReportedBy').value,
+                company: document.getElementById('obsCompany').value,
+                contact: document.getElementById('obsContact').value
+            };
+
+            try {
+                const response = await fetch('/api/observations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(obsData)
+                });
+                if (!response.ok) throw new Error('Failed to submit');
+
+                showAlert('✓ Thank you — this has been reported to the HSEQ team', 'success');
+                this.reset();
+                document.querySelectorAll('#obsTypePicker .obs-type-btn').forEach(b => b.classList.remove('selected'));
+                document.getElementById('obsType').value = '';
+            } catch (error) {
+                console.error('Error submitting observation:', error);
+                showAlert('Failed to submit report — please try again', 'error');
+            }
         });
 
         document.getElementById('hazardForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const likelihood = document.getElementById('hazardLikelihood').value;
-            const consequence = document.getElementById('hazardConsequence').value;
+            const severity = document.getElementById('hazardSeverity').value;
 
-            if (!likelihood || !consequence) {
-                showAlert('⚠️ Select a Likelihood and Consequence level', 'error');
+            if (!severity) {
+                showAlert('⚠️ Select an outcome (near miss, injury, etc.)', 'error');
                 return;
             }
 
@@ -1342,8 +1354,7 @@
                 description: document.getElementById('hazardDescription').value,
                 location: document.getElementById('hazardLocation').value,
                 reportedBy: document.getElementById('hazardReportedBy').value,
-                likelihood: likelihood,
-                consequence: consequence,
+                severity: severity,
                 immediateAction: document.getElementById('hazardAction').value
             };
 
@@ -1352,7 +1363,7 @@
             if (success) {
                 showAlert(`⚠️ Hazard reported successfully!`, 'success');
                 this.reset();
-                clearRiskPickers();
+                clearSeverityPicker();
             }
         });
 
@@ -1440,7 +1451,7 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `visitor-register-456a-remuera-road-${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = `visitor-register-256a-remuera-road-${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
             window.URL.revokeObjectURL(url);
         }
