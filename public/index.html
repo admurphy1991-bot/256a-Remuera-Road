@@ -1447,8 +1447,15 @@
             const alert = document.createElement('div');
             alert.className = `alert alert-${type}`;
             alert.textContent = message;
-            document.getElementById('signin').insertBefore(alert, document.getElementById('signinLocked'));
-            
+
+            const activeTab = document.querySelector('.tab-content.active') || document.getElementById('signin');
+            const heading = activeTab.querySelector('h2');
+            if (heading) {
+                heading.insertAdjacentElement('afterend', alert);
+            } else {
+                activeTab.prepend(alert);
+            }
+
             setTimeout(() => alert.remove(), 3000);
         }
 
