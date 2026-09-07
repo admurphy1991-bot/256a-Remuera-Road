@@ -409,7 +409,7 @@
             line-height: 1.6;
         }
 
-        .severity-badge {
+        .risk-badge {
             display: inline-block;
             border-radius: 4px;
             padding: 3px 10px;
@@ -448,37 +448,60 @@
         .status-open { background: #fed7d7; color: #742a2a; }
         .status-closed { background: #c6f6d5; color: #22543d; }
 
-        .severity-picker {
-            display: flex;
-            gap: 8px;
-            margin-top: 6px;
+        .risk-matrix {
+            display: grid;
+            grid-template-columns: 90px repeat(5, 1fr);
+            gap: 4px;
+            margin-top: 10px;
         }
 
-        .severity-btn {
-            flex: 1;
-            min-height: 80px;
-            border: 3px solid transparent;
-            border-radius: 10px;
-            padding: 10px 4px 8px;
-            cursor: pointer;
-            color: white;
+        .rm-col-label, .rm-row-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #4a5568;
+        }
+
+        .rm-col-label {
+            text-align: center;
+            align-self: end;
+            padding-bottom: 4px;
+        }
+
+        .rm-row-label {
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            text-align: right;
+            padding-right: 6px;
+        }
+
+        .risk-cell {
+            border: 3px solid transparent;
+            border-radius: 6px;
+            min-height: 42px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            font-weight: 700;
+            font-size: 13px;
+            color: white;
+            cursor: pointer;
             transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
         }
 
-        .severity-btn:hover {
-            transform: translateY(-2px);
+        .risk-cell:hover {
+            transform: scale(1.06);
         }
 
-        .severity-btn.selected {
+        .risk-cell.selected {
             border-color: #2d3748;
-            transform: scale(1.08);
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
+
+        .risk-low { background: #38a169; }
+        .risk-medium { background: #d69e2e; }
+        .risk-high { background: #dd6b20; }
+        .risk-critical { background: #c53030; }
 
         .lock-notice {
             text-align: center;
@@ -541,17 +564,6 @@
             font-size: 30px;
             line-height: 1;
         }
-
-        .severity-btn .sv-emoji {
-            font-size: 30px;
-            line-height: 1;
-        }
-
-        .sv-near_miss { background: #38a169; }
-        .sv-minor { background: #a3b81c; }
-        .sv-injury { background: #ed8936; }
-        .sv-serious { background: #e53e3e; }
-        .sv-fatality { background: #4a1010; }
 
         @media print {
             body {
@@ -803,25 +815,54 @@
                         <input type="text" id="hazardReportedBy" required placeholder="Full name">
                     </div>
                     <div class="form-group">
-                        <label for="hazardSeverity">Outcome *</label>
-                        <div class="severity-picker" id="severityPicker">
-                            <button type="button" class="severity-btn sv-near_miss" data-value="near_miss" title="Near Miss" onclick="selectSeverity('near_miss',this)">
-                                <span class="sv-emoji">😌</span>
-                            </button>
-                            <button type="button" class="severity-btn sv-minor" data-value="minor" title="Minor Injury" onclick="selectSeverity('minor',this)">
-                                <span class="sv-emoji">🤕</span>
-                            </button>
-                            <button type="button" class="severity-btn sv-injury" data-value="injury" title="Injury" onclick="selectSeverity('injury',this)">
-                                <span class="sv-emoji">🚑</span>
-                            </button>
-                            <button type="button" class="severity-btn sv-serious" data-value="serious" title="Serious Injury" onclick="selectSeverity('serious',this)">
-                                <span class="sv-emoji">🚨</span>
-                            </button>
-                            <button type="button" class="severity-btn sv-fatality" data-value="fatality" title="Fatality" onclick="selectSeverity('fatality',this)">
-                                <span class="sv-emoji">💀</span>
-                            </button>
+                        <label>Risk Assessment *</label>
+                        <p style="font-size:13px;color:#718096;margin:4px 0 4px;">Click the cell where likelihood meets consequence.</p>
+                        <div class="risk-matrix" id="riskMatrix">
+                            <div></div>
+                            <div class="rm-col-label">Insignificant</div>
+                            <div class="rm-col-label">Minor</div>
+                            <div class="rm-col-label">Moderate</div>
+                            <div class="rm-col-label">Major</div>
+                            <div class="rm-col-label">Catastrophic</div>
+
+                            <div class="rm-row-label">Almost Certain</div>
+                            <div class="risk-cell" data-l="5" data-c="1" onclick="selectRiskCell(this)">5</div>
+                            <div class="risk-cell" data-l="5" data-c="2" onclick="selectRiskCell(this)">10</div>
+                            <div class="risk-cell" data-l="5" data-c="3" onclick="selectRiskCell(this)">15</div>
+                            <div class="risk-cell" data-l="5" data-c="4" onclick="selectRiskCell(this)">20</div>
+                            <div class="risk-cell" data-l="5" data-c="5" onclick="selectRiskCell(this)">25</div>
+
+                            <div class="rm-row-label">Likely</div>
+                            <div class="risk-cell" data-l="4" data-c="1" onclick="selectRiskCell(this)">4</div>
+                            <div class="risk-cell" data-l="4" data-c="2" onclick="selectRiskCell(this)">8</div>
+                            <div class="risk-cell" data-l="4" data-c="3" onclick="selectRiskCell(this)">12</div>
+                            <div class="risk-cell" data-l="4" data-c="4" onclick="selectRiskCell(this)">16</div>
+                            <div class="risk-cell" data-l="4" data-c="5" onclick="selectRiskCell(this)">20</div>
+
+                            <div class="rm-row-label">Possible</div>
+                            <div class="risk-cell" data-l="3" data-c="1" onclick="selectRiskCell(this)">3</div>
+                            <div class="risk-cell" data-l="3" data-c="2" onclick="selectRiskCell(this)">6</div>
+                            <div class="risk-cell" data-l="3" data-c="3" onclick="selectRiskCell(this)">9</div>
+                            <div class="risk-cell" data-l="3" data-c="4" onclick="selectRiskCell(this)">12</div>
+                            <div class="risk-cell" data-l="3" data-c="5" onclick="selectRiskCell(this)">15</div>
+
+                            <div class="rm-row-label">Unlikely</div>
+                            <div class="risk-cell" data-l="2" data-c="1" onclick="selectRiskCell(this)">2</div>
+                            <div class="risk-cell" data-l="2" data-c="2" onclick="selectRiskCell(this)">4</div>
+                            <div class="risk-cell" data-l="2" data-c="3" onclick="selectRiskCell(this)">6</div>
+                            <div class="risk-cell" data-l="2" data-c="4" onclick="selectRiskCell(this)">8</div>
+                            <div class="risk-cell" data-l="2" data-c="5" onclick="selectRiskCell(this)">10</div>
+
+                            <div class="rm-row-label">Rare</div>
+                            <div class="risk-cell" data-l="1" data-c="1" onclick="selectRiskCell(this)">1</div>
+                            <div class="risk-cell" data-l="1" data-c="2" onclick="selectRiskCell(this)">2</div>
+                            <div class="risk-cell" data-l="1" data-c="3" onclick="selectRiskCell(this)">3</div>
+                            <div class="risk-cell" data-l="1" data-c="4" onclick="selectRiskCell(this)">4</div>
+                            <div class="risk-cell" data-l="1" data-c="5" onclick="selectRiskCell(this)">5</div>
                         </div>
-                        <input type="hidden" id="hazardSeverity">
+                        <div id="riskSelectionSummary" style="margin-top:10px;font-weight:600;color:#4a5568;font-size:14px;"></div>
+                        <input type="hidden" id="hazardLikelihood">
+                        <input type="hidden" id="hazardConsequence">
                     </div>
                     <div class="form-group">
                         <label for="hazardAction">Immediate Action Taken</label>
@@ -929,27 +970,53 @@
         // Hazard ID Functions
         let hazards = [];
 
-        const SEVERITY_LEVELS = {
-            near_miss: { label: 'Near Miss',      emoji: '😌', cls: 'sv-near_miss' },
-            minor:     { label: 'Minor Injury',   emoji: '🤕', cls: 'sv-minor' },
-            injury:    { label: 'Injury',         emoji: '🚑', cls: 'sv-injury' },
-            serious:   { label: 'Serious Injury', emoji: '🚨', cls: 'sv-serious' },
-            fatality:  { label: 'Fatality',       emoji: '💀', cls: 'sv-fatality' }
-        };
+        const RISK_LIKELIHOOD_LABELS = { 1: 'Rare', 2: 'Unlikely', 3: 'Possible', 4: 'Likely', 5: 'Almost Certain' };
+        const RISK_CONSEQUENCE_LABELS = { 1: 'Insignificant', 2: 'Minor', 3: 'Moderate', 4: 'Major', 5: 'Catastrophic' };
 
-        function severityInfo(key) {
-            return SEVERITY_LEVELS[key] || { label: key || 'Unknown', emoji: '❓', cls: '' };
+        // Standard 5x5 likelihood x consequence risk matrix (score = likelihood * consequence)
+        function getRiskBand(score) {
+            if (score >= 16) return 'Critical';
+            if (score >= 9) return 'High';
+            if (score >= 5) return 'Medium';
+            return 'Low';
         }
 
-        function selectSeverity(value, btnEl) {
-            document.getElementById('hazardSeverity').value = value;
-            document.querySelectorAll('#severityPicker .severity-btn').forEach(b => b.classList.remove('selected'));
-            btnEl.classList.add('selected');
+        function riskBandClass(band) {
+            return { Low: 'risk-low', Medium: 'risk-medium', High: 'risk-high', Critical: 'risk-critical' }[band] || '';
         }
 
-        function clearSeverityPicker() {
-            document.getElementById('hazardSeverity').value = '';
-            document.querySelectorAll('.severity-btn.selected').forEach(b => b.classList.remove('selected'));
+        function riskInfo(h) {
+            const score = h.riskScore != null ? h.riskScore : (h.likelihood || 0) * (h.consequence || 0);
+            const band = h.riskBand || getRiskBand(score);
+            return { label: band, cls: riskBandClass(band), score };
+        }
+
+        function initRiskMatrix() {
+            document.querySelectorAll('#riskMatrix .risk-cell').forEach(cell => {
+                const score = Number(cell.dataset.l) * Number(cell.dataset.c);
+                cell.classList.add(riskBandClass(getRiskBand(score)));
+            });
+        }
+
+        function selectRiskCell(cellEl) {
+            const likelihood = cellEl.dataset.l;
+            const consequence = cellEl.dataset.c;
+            document.getElementById('hazardLikelihood').value = likelihood;
+            document.getElementById('hazardConsequence').value = consequence;
+            document.querySelectorAll('#riskMatrix .risk-cell').forEach(c => c.classList.remove('selected'));
+            cellEl.classList.add('selected');
+
+            const score = Number(likelihood) * Number(consequence);
+            const band = getRiskBand(score);
+            document.getElementById('riskSelectionSummary').innerHTML =
+                `${RISK_LIKELIHOOD_LABELS[likelihood]} × ${RISK_CONSEQUENCE_LABELS[consequence]} = Risk Score ${score} — <span class="risk-badge ${riskBandClass(band)}">${band}</span>`;
+        }
+
+        function clearRiskMatrix() {
+            document.getElementById('hazardLikelihood').value = '';
+            document.getElementById('hazardConsequence').value = '';
+            document.querySelectorAll('#riskMatrix .risk-cell.selected').forEach(c => c.classList.remove('selected'));
+            document.getElementById('riskSelectionSummary').innerHTML = '';
         }
 
         async function fetchHazards() {
@@ -977,12 +1044,12 @@
             }
 
             boardDiv.innerHTML = openHazards.map(h => {
-                const sev = severityInfo(h.severity);
+                const risk = riskInfo(h);
                 return `
                     <div class="hazard-card">
                         <div class="hazard-desc">${h.description}</div>
                         <div class="hazard-details">
-                            <span class="severity-badge ${sev.cls}">${sev.emoji} ${sev.label}</span><br>
+                            <span class="risk-badge ${risk.cls}">Risk ${risk.score} — ${risk.label}</span><br>
                             📍 ${h.location || 'Not specified'}
                             ${h.immediateAction ? `<br>Current control: ${h.immediateAction}` : ''}
                         </div>
@@ -1042,7 +1109,7 @@
             }
 
             listDiv.innerHTML = hazards.map(h => {
-                const sev = severityInfo(h.severity);
+                const risk = riskInfo(h);
                 const isClosed = h.status === 'Closed';
                 return `
                     <div class="hazard-card ${isClosed ? 'closed' : ''}">
@@ -1051,7 +1118,7 @@
                             <span class="status-tag ${isClosed ? 'status-closed' : 'status-open'}">${h.status}</span>
                         </div>
                         <div class="hazard-details">
-                            <span class="severity-badge ${sev.cls}">${sev.emoji} ${sev.label}</span><br>
+                            <span class="risk-badge ${risk.cls}">Risk ${risk.score} — ${risk.label}</span><br>
                             📍 ${h.location || 'Not specified'}<br>
                             Reported by ${h.reportedBy || 'Unknown'} — ${new Date(h.reportedTime).toLocaleString()}
                             ${h.immediateAction ? `<br>Immediate action: ${h.immediateAction}` : ''}
@@ -1071,12 +1138,15 @@
             }
 
             const csv = [
-                ['Description', 'Location', 'Reported By', 'Outcome', 'Immediate Action', 'Status', 'Reported Time', 'Closed Action', 'Closed By', 'Closed Time'],
+                ['Description', 'Location', 'Reported By', 'Likelihood', 'Consequence', 'Risk Score', 'Risk Band', 'Immediate Action', 'Status', 'Reported Time', 'Closed Action', 'Closed By', 'Closed Time'],
                 ...hazards.map(h => [
                     h.description,
                     h.location || '',
                     h.reportedBy || '',
-                    severityInfo(h.severity).label,
+                    RISK_LIKELIHOOD_LABELS[h.likelihood] || h.likelihood,
+                    RISK_CONSEQUENCE_LABELS[h.consequence] || h.consequence,
+                    h.riskScore,
+                    h.riskBand,
                     h.immediateAction || '',
                     h.status,
                     new Date(h.reportedTime).toLocaleString(),
@@ -1169,6 +1239,7 @@
 
         // Initialize
         window.onload = function() {
+            initRiskMatrix();
             const currentUrl = window.location.href.split('#')[0];
             document.getElementById('currentUrl').textContent = currentUrl;
             new QRCode(document.getElementById("qrcode"), {
@@ -1416,10 +1487,11 @@
         document.getElementById('hazardForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const severity = document.getElementById('hazardSeverity').value;
+            const likelihood = document.getElementById('hazardLikelihood').value;
+            const consequence = document.getElementById('hazardConsequence').value;
 
-            if (!severity) {
-                showAlert('⚠️ Select an outcome (near miss, injury, etc.)', 'error');
+            if (!likelihood || !consequence) {
+                showAlert('⚠️ Click a cell on the risk matrix to rate likelihood × consequence', 'error');
                 return;
             }
 
@@ -1427,7 +1499,8 @@
                 description: document.getElementById('hazardDescription').value,
                 location: document.getElementById('hazardLocation').value,
                 reportedBy: document.getElementById('hazardReportedBy').value,
-                severity: severity,
+                likelihood: Number(likelihood),
+                consequence: Number(consequence),
                 immediateAction: document.getElementById('hazardAction').value
             };
 
@@ -1436,7 +1509,7 @@
             if (success) {
                 showAlert(`⚠️ Hazard reported successfully!`, 'success');
                 this.reset();
-                clearSeverityPicker();
+                clearRiskMatrix();
             }
         });
 

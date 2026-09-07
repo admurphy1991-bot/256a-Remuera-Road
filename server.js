@@ -108,7 +108,10 @@ async function initDb() {
             description TEXT NOT NULL,
             location TEXT,
             reported_by TEXT,
-            severity TEXT NOT NULL,
+            likelihood INTEGER NOT NULL,
+            consequence INTEGER NOT NULL,
+            risk_score INTEGER NOT NULL,
+            risk_band TEXT NOT NULL,
             immediate_action TEXT,
             status TEXT NOT NULL DEFAULT 'Open',
             reported_time TIMESTAMPTZ NOT NULL,
@@ -141,13 +144,13 @@ async function initDb() {
     `);
 }
 
-const SEVERITY_LABELS = {
-    near_miss: 'Near Miss',
-    minor: 'Minor Injury',
-    injury: 'Injury',
-    serious: 'Serious Injury',
-    fatality: 'Fatality'
-};
+// Standard 5x5 likelihood x consequence risk matrix (score = likelihood * consequence)
+function computeRiskBand(score) {
+    if (score >= 16) return 'Critical';
+    if (score >= 9) return 'High';
+    if (score >= 5) return 'Medium';
+    return 'Low';
+}
 
 function toVisitorJson(row) {
     return {
@@ -221,8 +224,10 @@ function toHazardJson(row) {
         description: row.description,
         location: row.location,
         reportedBy: row.reported_by,
-        severity: row.severity,
-        severityLabel: SEVERITY_LABELS[row.severity] || row.severity,
+        likelihood: row.likelihood,
+        consequence: row.consequence,
+        riskScore: row.risk_score,
+        riskBand: row.risk_band,
         immediateAction: row.immediate_action,
         status: row.status,
         reportedTime: row.reported_time,
@@ -246,20 +251,27 @@ app.get('/api/hazards', async (req, res) => {
 // Report a new hazard
 app.post('/api/hazards', async (req, res) => {
     try {
-        const { description, location, reportedBy, severity, immediateAction } = req.body;
+        const { description, location, reportedBy, likelihood, consequence, immediateAction } = req.body;
 
-        if (!description || !severity || !SEVERITY_LABELS[severity]) {
-            return res.status(400).json({ error: 'Description and a valid severity are required' });
+        const likelihoodNum = Number(likelihood);
+        const consequenceNum = Number(consequence);
+        const validRating = Number.isInteger(likelihoodNum) && Number.isInteger(consequenceNum) &&
+            likelihoodNum >= 1 && likelihoodNum <= 5 && consequenceNum >= 1 && consequenceNum <= 5;
+
+        if (!description || !validRating) {
+            return res.status(400).json({ error: 'Description, likelihood (1-5) and consequence (1-5) are required' });
         }
 
         const id = Date.now();
         const reportedTime = new Date().toISOString();
+        const riskScore = likelihoodNum * consequenceNum;
+        const riskBand = computeRiskBand(riskScore);
 
         const result = await pool.query(
-            `INSERT INTO hazards (id, description, location, reported_by, severity, immediate_action, status, reported_time)
-             VALUES ($1, $2, $3, $4, $5, $6, 'Open', $7)
+            `INSERT INTO hazards (id, description, location, reported_by, likelihood, consequence, risk_score, risk_band, immediate_action, status, reported_time)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'Open', $10)
              RETURNING *`,
-            [id, description, location || null, reportedBy || null, severity, immediateAction || null, reportedTime]
+            [id, description, location || null, reportedBy || null, likelihoodNum, consequenceNum, riskScore, riskBand, immediateAction || null, reportedTime]
         );
 
         res.json(toHazardJson(result.rows[0]));
