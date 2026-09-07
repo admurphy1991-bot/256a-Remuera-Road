@@ -169,6 +169,7 @@ app.get('/api/visitors', async (req, res) => {
         const result = await pool.query('SELECT * FROM visitors ORDER BY sign_in_time ASC');
         res.json(result.rows.map(toVisitorJson));
     } catch (error) {
+        console.error('Failed to read visitors:', error);
         res.status(500).json({ error: 'Failed to read visitors' });
     }
 });
@@ -189,6 +190,7 @@ app.post('/api/visitors', async (req, res) => {
 
         res.json(toVisitorJson(result.rows[0]));
     } catch (error) {
+        console.error('Failed to add visitor:', error);
         res.status(500).json({ error: 'Failed to add visitor' });
     }
 });
@@ -208,6 +210,7 @@ app.put('/api/visitors/:id/signout', async (req, res) => {
             res.status(404).json({ error: 'Visitor not found' });
         }
     } catch (error) {
+        console.error('Failed to sign out visitor:', error);
         res.status(500).json({ error: 'Failed to sign out visitor' });
     }
 });
@@ -235,6 +238,7 @@ app.get('/api/hazards', async (req, res) => {
         const result = await pool.query('SELECT * FROM hazards ORDER BY reported_time DESC');
         res.json(result.rows.map(toHazardJson));
     } catch (error) {
+        console.error('Failed to read hazards:', error);
         res.status(500).json({ error: 'Failed to read hazards' });
     }
 });
@@ -260,6 +264,7 @@ app.post('/api/hazards', async (req, res) => {
 
         res.json(toHazardJson(result.rows[0]));
     } catch (error) {
+        console.error('Failed to report hazard:', error);
         res.status(500).json({ error: 'Failed to report hazard' });
     }
 });
@@ -284,6 +289,7 @@ app.put('/api/hazards/:id/close', async (req, res) => {
             res.status(404).json({ error: 'Hazard not found' });
         }
     } catch (error) {
+        console.error('Failed to close out hazard:', error);
         res.status(500).json({ error: 'Failed to close out hazard' });
     }
 });
@@ -307,6 +313,7 @@ app.get('/api/observations', async (req, res) => {
         const result = await pool.query('SELECT * FROM observations ORDER BY reported_time DESC');
         res.json(result.rows.map(toObservationJson));
     } catch (error) {
+        console.error('Failed to read observations:', error);
         res.status(500).json({ error: 'Failed to read observations' });
     }
 });
@@ -336,6 +343,7 @@ app.post('/api/observations', async (req, res) => {
 
         res.json(saved);
     } catch (error) {
+        console.error('Failed to submit report:', error);
         res.status(500).json({ error: 'Failed to submit report' });
     }
 });
@@ -355,6 +363,7 @@ app.get('/api/hazard-board-ack', async (req, res) => {
         const result = await pool.query('SELECT * FROM hazard_acknowledgements ORDER BY acknowledged_time DESC');
         res.json(result.rows.map(toAckJson));
     } catch (error) {
+        console.error('Failed to read acknowledgements:', error);
         res.status(500).json({ error: 'Failed to read acknowledgements' });
     }
 });
@@ -380,6 +389,7 @@ app.post('/api/hazard-board-ack', async (req, res) => {
 
         res.json(toAckJson(result.rows[0]));
     } catch (error) {
+        console.error('Failed to record acknowledgement:', error);
         res.status(500).json({ error: 'Failed to record acknowledgement' });
     }
 });
