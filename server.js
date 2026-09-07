@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SITE_NAME = '456a Remuera Road';
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -42,9 +43,9 @@ async function sendObservationAlert(obs) {
         await mailTransporter.sendMail({
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
             to: ALERT_RECIPIENTS.join(', '),
-            subject: `[256a Remuera Road] New ${typeLabel} Reported`,
+            subject: `[${SITE_NAME}] New ${typeLabel} Reported`,
             text: [
-                `A new ${typeLabel.toLowerCase()} has been reported on site (256a Remuera Road).`,
+                `A new ${typeLabel.toLowerCase()} has been reported on site (${SITE_NAME}).`,
                 '',
                 `Description: ${obs.description}`,
                 `Location: ${obs.location || 'Not specified'}`,
@@ -331,7 +332,7 @@ app.post('/api/observations', async (req, res) => {
 
         const saved = toObservationJson(result.rows[0]);
         sendObservationAlert(saved); // fire-and-forget, doesn't block the response
-        sendObservationWebhook(saved); // fire-and-forget, doesn't block the response
+        sendObservationWebhook({ ...saved, siteName: SITE_NAME }); // fire-and-forget, doesn't block the response
 
         res.json(saved);
     } catch (error) {
