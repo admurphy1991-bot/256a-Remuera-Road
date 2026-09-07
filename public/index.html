@@ -906,6 +906,7 @@
                     </div>
                 </div>
                 <button onclick="downloadHazardCSV()" class="btn btn-secondary">📥 Download Hazard Register CSV</button>
+                <button onclick="clearAllHazards()" class="btn btn-secondary" style="margin-top:8px;">🗑️ Clear Hazard Register</button>
                 <div class="hazard-list" id="hazardList"></div>
             </div>
 
@@ -1094,6 +1095,28 @@
                 console.error('Error reporting hazard:', error);
                 showAlert('Failed to report hazard', 'error');
                 return false;
+            }
+        }
+
+        async function clearAllHazards() {
+            const password = prompt('Enter password to clear the hazard register:');
+            if (password !== 'Sansom12345') {
+                if (password !== null) alert('Incorrect password!');
+                return;
+            }
+
+            if (!confirm('This will permanently delete ALL hazards (open and closed) from the register. Are you sure?')) return;
+
+            try {
+                const response = await fetch('/api/hazards', {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error('Failed to clear');
+                await fetchHazards();
+                showAlert('✓ Hazard register cleared', 'success');
+            } catch (error) {
+                console.error('Error clearing hazards:', error);
+                showAlert('Failed to clear hazard register', 'error');
             }
         }
 

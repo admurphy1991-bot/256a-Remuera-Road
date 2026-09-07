@@ -281,6 +281,17 @@ app.post('/api/hazards', async (req, res) => {
     }
 });
 
+// Clear the entire hazard register
+app.delete('/api/hazards', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM hazards');
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Failed to clear hazards:', error);
+        res.status(500).json({ error: 'Failed to clear hazards' });
+    }
+});
+
 // Close out a hazard
 app.put('/api/hazards/:id/close', async (req, res) => {
     try {
