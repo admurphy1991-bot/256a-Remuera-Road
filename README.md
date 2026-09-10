@@ -1,21 +1,16 @@
-# Site Visitor Management — Canopy Construction
+# Site Visitor Management — 456a Remuera Road (Sansom)
 
 Multi-device visitor sign in/out system, with hazard board acknowledgement,
 hazard ID reporting, and near miss / observation reporting.
-
-This is an independent copy of the app originally built for Sansom
-Construction Systems — it has its own codebase, and should be deployed with
-its **own separate database and hosting**, not shared with any other
-company's deployment.
 
 ## Environment variables
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | Postgres connection string (must be a dedicated database for this deployment) |
+| `DATABASE_URL` | Yes | Postgres connection string |
 | `PORT` | No | Defaults to 3000 |
-| `SITE_NAME` | No | Shown in the app header, browser title, and email subject lines. Defaults to "Canopy Construction Site" |
-| `ALERT_RECIPIENTS` | For email alerts | Comma-separated list of email addresses to receive Near Miss / Observation alerts, e.g. `alice@canopy.co.nz,bob@canopy.co.nz` |
+| `SITE_NAME` | No | Shown in email subject lines. Defaults to "456a Remuera Road" |
+| `ALERT_RECIPIENTS` | No | Comma-separated list of email addresses to receive Near Miss / Observation alerts. Defaults to `joshs@sansom.co.nz,shaun@sansom.co.nz` if not set |
 | `SMTP_HOST` | For email alerts | SMTP server host |
 | `SMTP_PORT` | No | Defaults to 587 |
 | `SMTP_SECURE` | No | Set to `true` for port 465 (implicit TLS) |
@@ -24,30 +19,23 @@ company's deployment.
 | `SMTP_FROM` | No | Defaults to `SMTP_USER` |
 | `MAKE_WEBHOOK_URL` | For webhook alerts | Make.com (or any) webhook URL |
 
-Without `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS` and `ALERT_RECIPIENTS` all set,
-the app logs a warning on startup and reports are still saved — they just
-aren't emailed.
+Without `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS` set, the app logs a warning on
+startup and reports are still saved — they just aren't emailed.
 
 Independently, if `MAKE_WEBHOOK_URL` is set, every new report is also POSTed
 as raw JSON to that URL (fields: `id`, `type`, `description`, `location`,
-`reportedBy`, `company`, `contact`, `reportedTime`). The two notification
-paths don't depend on each other — use one, the other, or both.
+`reportedBy`, `company`, `contact`, `reportedTime`, `photo`). The two
+notification paths don't depend on each other — use one, the other, or both.
 
-## Before going live
+## A note on reusing this codebase for other sites
 
-- **Change the CSV/hazard board download password.** It's currently
-  `ChangeMe123`, hardcoded near the top of the `<script>` block in
-  `public/index.html` (`let CSV_PASSWORD = ...`). This is a client-side
-  check only — anyone who views page source can see it — so treat it as a
-  basic deterrent, not real security.
-- **Replace the placeholder logo** at `public/logo.svg` with Canopy
-  Construction's actual logo (same filename, or update the two `<img>` tags
-  in `public/index.html` that reference it).
-- **Set `SITE_NAME`** so the header, browser tab, CSV filenames, and email
-  subject lines show the correct site/address rather than the default.
-- **Provision a dedicated Postgres database** for this deployment. Do not
-  point `DATABASE_URL` at another company's or another site's database —
-  visitor sign-ins and hazard data would mix together in the same tables.
+This codebase has also been copied and rebranded for other companies (e.g.
+Canopy Construction). If you're doing that again: **always create a
+completely separate GitHub repo and a completely separate Railway
+project/database for the new company.** A mix-up once already happened where
+a rebranded copy's `server.js`/`package.json`/`README.md` got uploaded into
+*this* repo by mistake — always double-check which repo you're uploading to
+before dragging files into GitHub's upload page.
 
 ### Setting up a Make.com webhook
 

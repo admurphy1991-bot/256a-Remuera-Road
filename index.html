@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Site Sign In/Out</title>
+    <title>Site Sign In/Out - Sansoms @ 456a Remuera Road</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * {
@@ -82,6 +82,25 @@
                 flex-basis: 45%;
                 font-size: 12px;
                 padding: 9px 4px;
+            }
+
+            .content {
+                padding: 20px 14px;
+            }
+
+            .risk-matrix {
+                grid-template-columns: 52px repeat(5, 1fr);
+                gap: 2px;
+            }
+
+            .rm-col-label, .rm-row-label {
+                font-size: 9px;
+            }
+
+            .risk-cell {
+                min-height: 34px;
+                font-size: 11px;
+                border-width: 2px;
             }
         }
 
@@ -459,6 +478,8 @@
             font-size: 11px;
             font-weight: 700;
             color: #4a5568;
+            min-width: 0;
+            overflow-wrap: break-word;
         }
 
         .rm-col-label {
@@ -479,6 +500,7 @@
             border: 3px solid transparent;
             border-radius: 6px;
             min-height: 42px;
+            min-width: 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -603,9 +625,9 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="logo.svg" alt="Canopy Construction Logo" class="header-logo">
+            <img src="sansom-logo.jpg" alt="Sansoms Logo" class="header-logo">
             <h1>🏗️ Site Visitor Management</h1>
-            <p id="siteNameLabel">Canopy Construction</p>
+            <p>Sansoms @ 456a Remuera Road</p>
         </div>
 
         <div class="content">
@@ -900,7 +922,7 @@
             <div id="qr" class="tab-content">
                 <h2 style="margin-bottom: 20px; color: #2d3748;">QR Code Sign In</h2>
                 <div class="qr-section">
-                    <img src="logo.svg" alt="Canopy Construction Logo" style="max-width: 300px; margin-bottom: 20px;">
+                    <img src="sansom-logo.jpg" alt="Sansoms Logo" style="max-width: 300px; margin-bottom: 20px;">
                     <div id="qrcode"></div>
                     <div class="qr-instructions">
                         <strong>📱 Scan this QR code to sign in</strong><br>
@@ -916,31 +938,6 @@
     </div>
 
     <script>
-        // Configurable per-deployment values — CSV_PASSWORD should be changed
-        // before going live; set a real one via prompt/agreement with your team.
-        // siteSlug and the header/title text are populated from /api/config on load.
-        let CSV_PASSWORD = 'ChangeMe123';
-        let siteSlug = 'site';
-
-        async function fetchSiteConfig() {
-            try {
-                const response = await fetch('/api/config');
-                if (!response.ok) throw new Error('Failed to load config');
-                const config = await response.json();
-                if (config.siteName) {
-                    document.title = `Site Sign In/Out - ${config.siteName}`;
-                    const label = document.getElementById('siteNameLabel');
-                    if (label) label.textContent = config.siteName;
-                    siteSlug = config.siteName
-                        .toLowerCase()
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/(^-|-$)/g, '') || 'site';
-                }
-            } catch (error) {
-                console.error('Error loading site config:', error);
-            }
-        }
-
         let visitors = [];
         let refreshInterval;
 
@@ -1166,7 +1163,7 @@
 
         function downloadHazardCSV() {
             const password = prompt('Enter password to download CSV:');
-            if (password !== CSV_PASSWORD) {
+            if (password !== 'Sansom12345') {
                 alert('Incorrect password!');
                 return;
             }
@@ -1194,7 +1191,7 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${siteSlug}-hazard-register-${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = `hazard-register-456a-remuera-road-${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
             window.URL.revokeObjectURL(url);
         }
@@ -1273,7 +1270,6 @@
 
         // Initialize
         window.onload = function() {
-            fetchSiteConfig();
             initRiskMatrix();
             const currentUrl = window.location.href.split('#')[0];
             document.getElementById('currentUrl').textContent = currentUrl;
@@ -1678,7 +1674,7 @@
 
         function downloadCSV() {
             const password = prompt('Enter password to download CSV:');
-            if (password !== CSV_PASSWORD) {
+            if (password !== 'Sansom12345') {
                 alert('Incorrect password!');
                 return;
             }
@@ -1701,7 +1697,7 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${siteSlug}-visitor-register-${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = `visitor-register-456a-remuera-road-${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
             window.URL.revokeObjectURL(url);
         }

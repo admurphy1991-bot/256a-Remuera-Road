@@ -5,7 +5,7 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SITE_NAME = process.env.SITE_NAME || 'Canopy Construction Site';
+const SITE_NAME = process.env.SITE_NAME || '456a Remuera Road';
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -15,9 +15,10 @@ const pool = new Pool({
 });
 
 // Email alerts (near miss / observation notifications)
-// Recipients and SMTP credentials both come from environment variables —
-// see README for setup steps.
-const ALERT_RECIPIENTS = (process.env.ALERT_RECIPIENTS || '')
+// Recipients come from ALERT_RECIPIENTS if set (comma-separated), otherwise
+// fall back to the original Sansom HSEQ contacts so alerts don't silently
+// stop if the env var isn't configured on a given deployment.
+const ALERT_RECIPIENTS = (process.env.ALERT_RECIPIENTS || 'joshs@sansom.co.nz,shaun@sansom.co.nz')
     .split(',')
     .map(s => s.trim())
     .filter(Boolean);
