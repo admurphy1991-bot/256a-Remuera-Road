@@ -5,7 +5,7 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SITE_NAME = '456a Remuera Road';
+const SITE_NAME = process.env.SITE_NAME || 'Canopy Construction Site';
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -15,9 +15,12 @@ const pool = new Pool({
 });
 
 // Email alerts (near miss / observation notifications)
-// Recipients are hardcoded per site request. SMTP credentials still come from
-// environment variables — see README notes for setup steps (SendGrid recommended).
-const ALERT_RECIPIENTS = ['joshs@sansom.co.nz', 'shaun@sansom.co.nz'];
+// Recipients and SMTP credentials both come from environment variables —
+// see README for setup steps.
+const ALERT_RECIPIENTS = (process.env.ALERT_RECIPIENTS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
 
 let mailTransporter = null;
 if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -34,10 +37,28 @@ if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     console.warn('SMTP not configured — near miss/observation email alerts are disabled. Set SMTP_HOST, SMTP_USER and SMTP_PASS to enable (see README).');
 }
 
-async function sendObservationAlert(obs) {
-    if (!mailTransporter) return;
+if (mailTransporter && ALERT_RECIPIENTS.length === 0) {
+    console.warn('SMTP is configured but ALERT_RECIPIENTS is empty — set it to a comma-separated list of email addresses to receive alerts.');
+}
+
+async function sendObservationAlert(obs, photo) {
+    if (!mailTransporter || ALERT_RECIPIENTS.length === 0) return;
 
     const typeLabel = obs.type === 'near_miss' ? 'Near Miss' : 'Observation';
+    const attachments = [];
+
+    if (photo) {
+        const match = photo.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+        if (match) {
+            const ext = match[1].split('/')[1].replace('jpeg', 'jpg');
+            attachments.push({
+                filename: `photo.${ext}`,
+                content: match[2],
+                encoding: 'base64',
+                cid: 'observationPhoto'
+            });
+        }
+    }
 
     try {
         await mailTransporter.sendMail({
@@ -52,8 +73,20 @@ async function sendObservationAlert(obs) {
                 `Reported by: ${obs.reportedBy || 'Anonymous'}`,
                 `Company: ${obs.company || 'Not provided'}`,
                 `Contact: ${obs.contact || 'Not provided'}`,
-                `Time: ${new Date(obs.reportedTime).toLocaleString()}`
-            ].join('\n')
+                `Time: ${new Date(obs.reportedTime).toLocaleString()}`,
+                photo ? '\nPhoto attached.' : ''
+            ].join('\n'),
+            html: photo ? [
+                `<p>A new ${typeLabel.toLowerCase()} has been reported on site (${SITE_NAME}).</p>`,
+                `<p><strong>Description:</strong> ${obs.description}<br>`,
+                `<strong>Location:</strong> ${obs.location || 'Not specified'}<br>`,
+                `<strong>Reported by:</strong> ${obs.reportedBy || 'Anonymous'}<br>`,
+                `<strong>Company:</strong> ${obs.company || 'Not provided'}<br>`,
+                `<strong>Contact:</strong> ${obs.contact || 'Not provided'}<br>`,
+                `<strong>Time:</strong> ${new Date(obs.reportedTime).toLocaleString()}</p>`,
+                attachments.length ? `<img src="cid:observationPhoto" style="max-width:500px;">` : ''
+            ].join('\n') : undefined,
+            attachments
         });
     } catch (error) {
         console.error('Failed to send observation email alert:', error);
@@ -84,8 +117,15 @@ async function sendObservationWebhook(obs) {
 }
 
 // Middleware
-app.use(express.json());
+// Higher limit than Express's 100kb default so compressed photo uploads
+// from the observation form don't get rejected before reaching the handler.
+app.use(express.json({ limit: '8mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Public config the front-end reads on load (site name, etc.)
+app.get('/api/config', (req, res) => {
+    res.json({ siteName: SITE_NAME });
+});
 
 async function initDb() {
     await pool.query(`
@@ -130,9 +170,13 @@ async function initDb() {
             reported_by TEXT,
             company TEXT,
             contact TEXT,
-            reported_time TIMESTAMPTZ NOT NULL
+            reported_time TIMESTAMPTZ NOT NULL,
+            photo_data TEXT
         )
     `);
+
+    // Migration for databases created before photo support was added
+    await pool.query(`ALTER TABLE observations ADD COLUMN IF NOT EXISTS photo_data TEXT`);
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS hazard_acknowledgements (
@@ -315,11 +359,13 @@ function toObservationJson(row) {
         reportedBy: row.reported_by,
         company: row.company,
         contact: row.contact,
-        reportedTime: row.reported_time
+        reportedTime: row.reported_time,
+        hasPhoto: !!row.photo_data
     };
 }
 
-// Get all near miss / observation reports
+// Get all near miss / observation reports (photo data itself is excluded here
+// to keep the list light — fetch it separately via /api/observations/:id/photo)
 app.get('/api/observations', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM observations ORDER BY reported_time DESC');
@@ -330,28 +376,56 @@ app.get('/api/observations', async (req, res) => {
     }
 });
 
+// Get the photo for one observation, as an actual image response
+app.get('/api/observations/:id/photo', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT photo_data FROM observations WHERE id = $1', [req.params.id]);
+
+        if (result.rows.length === 0 || !result.rows[0].photo_data) {
+            return res.status(404).send('No photo for this observation');
+        }
+
+        const dataUrl = result.rows[0].photo_data;
+        const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+
+        if (!match) {
+            return res.status(500).send('Stored photo is in an unexpected format');
+        }
+
+        res.set('Content-Type', match[1]);
+        res.send(Buffer.from(match[2], 'base64'));
+    } catch (error) {
+        console.error('Failed to read observation photo:', error);
+        res.status(500).send('Failed to read photo');
+    }
+});
+
 // Submit a near miss / observation report (contractors & visitors)
 app.post('/api/observations', async (req, res) => {
     try {
-        const { type, description, location, reportedBy, company, contact } = req.body;
+        const { type, description, location, reportedBy, company, contact, photo } = req.body;
 
         if (!description || !type || (type !== 'near_miss' && type !== 'observation')) {
             return res.status(400).json({ error: 'Description and a valid type are required' });
+        }
+
+        if (photo && !/^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(photo)) {
+            return res.status(400).json({ error: 'Photo must be a base64 image data URL' });
         }
 
         const id = Date.now();
         const reportedTime = new Date().toISOString();
 
         const result = await pool.query(
-            `INSERT INTO observations (id, type, description, location, reported_by, company, contact, reported_time)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO observations (id, type, description, location, reported_by, company, contact, reported_time, photo_data)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
              RETURNING *`,
-            [id, type, description, location || null, reportedBy || null, company || null, contact || null, reportedTime]
+            [id, type, description, location || null, reportedBy || null, company || null, contact || null, reportedTime, photo || null]
         );
 
         const saved = toObservationJson(result.rows[0]);
-        sendObservationAlert(saved); // fire-and-forget, doesn't block the response
-        sendObservationWebhook({ ...saved, siteName: SITE_NAME }); // fire-and-forget, doesn't block the response
+        sendObservationAlert(saved, photo || null); // fire-and-forget, doesn't block the response
+        sendObservationWebhook({ ...saved, siteName: SITE_NAME, photo: photo || null }); // fire-and-forget, doesn't block the response
 
         res.json(saved);
     } catch (error) {

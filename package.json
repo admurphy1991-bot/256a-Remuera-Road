@@ -1,7 +1,7 @@
 {
-  "name": "site-visitor-management",
+  "name": "canopy-construction-site-app",
   "version": "1.0.0",
-  "description": "Multi-device visitor sign in/out system - 456a Remuera Road",
+  "description": "Multi-device visitor sign in/out system - Canopy Construction",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -12,6 +12,6 @@
     "nodemailer": "^6.9.14"
   },
   "keywords": ["visitor", "sign-in", "construction", "site-management"],
-  "author": "Sansoms",
+  "author": "Canopy Construction",
   "license": "MIT"
 }
