@@ -39,6 +39,20 @@ async function sendObservationAlert(obs) {
 
     const typeLabel = obs.type === 'near_miss' ? 'Near Miss' : 'Observation';
 
+    // Photos arrive as a "data:image/<type>;base64,<data>" URL — split that
+    // apart so we can send it as a real attachment instead of a wall of
+    // base64 text in the email body.
+    let attachments;
+    if (obs.photo) {
+        const match = /^data:image\/(\w+);base64,(.+)$/.exec(obs.photo);
+        if (match) {
+            attachments = [{
+                filename: `photo.${match[1]}`,
+                content: Buffer.from(match[2], 'base64')
+            }];
+        }
+    }
+
     try {
         await mailTransporter.sendMail({
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
@@ -52,8 +66,11 @@ async function sendObservationAlert(obs) {
                 `Reported by: ${obs.reportedBy || 'Anonymous'}`,
                 `Company: ${obs.company || 'Not provided'}`,
                 `Contact: ${obs.contact || 'Not provided'}`,
-                `Time: ${new Date(obs.reportedTime).toLocaleString()}`
-            ].join('\n')
+                `Time: ${new Date(obs.reportedTime).toLocaleString()}`,
+                attachments ? '' : null,
+                attachments ? 'Photo attached.' : null
+            ].filter(line => line !== null).join('\n'),
+            attachments
         });
     } catch (error) {
         console.error('Failed to send observation email alert:', error);
@@ -84,7 +101,9 @@ async function sendObservationWebhook(obs) {
 }
 
 // Middleware
-app.use(express.json());
+// Raised from Express's 100KB default so compressed observation photos
+// (typically 150-400KB as base64) don't get rejected with a 413.
+app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 async function initDb() {
@@ -130,9 +149,12 @@ async function initDb() {
             reported_by TEXT,
             company TEXT,
             contact TEXT,
+            photo TEXT,
             reported_time TIMESTAMPTZ NOT NULL
         )
     `);
+
+    await pool.query(`ALTER TABLE observations ADD COLUMN IF NOT EXISTS photo TEXT`);
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS hazard_acknowledgements (
@@ -326,6 +348,7 @@ function toObservationJson(row) {
         reportedBy: row.reported_by,
         company: row.company,
         contact: row.contact,
+        photo: row.photo,
         reportedTime: row.reported_time
     };
 }
@@ -344,20 +367,25 @@ app.get('/api/observations', async (req, res) => {
 // Submit a near miss / observation report (contractors & visitors)
 app.post('/api/observations', async (req, res) => {
     try {
-        const { type, description, location, reportedBy, company, contact } = req.body;
+        const { type, description, location, reportedBy, company, contact, photo } = req.body;
 
         if (!description || !type || (type !== 'near_miss' && type !== 'observation')) {
             return res.status(400).json({ error: 'Description and a valid type are required' });
+        }
+
+        const isValidPhoto = typeof photo === 'string' && photo.startsWith('data:image/');
+        if (photo && !isValidPhoto) {
+            return res.status(400).json({ error: 'Photo must be an image data URL' });
         }
 
         const id = Date.now();
         const reportedTime = new Date().toISOString();
 
         const result = await pool.query(
-            `INSERT INTO observations (id, type, description, location, reported_by, company, contact, reported_time)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO observations (id, type, description, location, reported_by, company, contact, photo, reported_time)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
              RETURNING *`,
-            [id, type, description, location || null, reportedBy || null, company || null, contact || null, reportedTime]
+            [id, type, description, location || null, reportedBy || null, company || null, contact || null, isValidPhoto ? photo : null, reportedTime]
         );
 
         const saved = toObservationJson(result.rows[0]);

@@ -792,6 +792,15 @@
                         <label for="obsContact">Contact Number (optional)</label>
                         <input type="tel" id="obsContact">
                     </div>
+                    <div class="form-group">
+                        <label for="obsPhotoInput">Photo (optional)</label>
+                        <input type="file" id="obsPhotoInput" accept="image/*" capture="environment" onchange="handleObsPhotoSelected(event)">
+                        <div id="obsPhotoPreviewWrap" style="display: none; margin-top: 10px;">
+                            <img id="obsPhotoPreview" style="max-width: 100%; max-height: 220px; border-radius: 8px; display: block;">
+                            <button type="button" class="close-out-btn" style="background:#e53e3e; margin-top:8px;" onclick="clearObsPhoto()">🗑️ Remove Photo</button>
+                        </div>
+                        <div id="obsPhotoStatus" style="font-size: 13px; color: #718096; margin-top: 6px;"></div>
+                    </div>
                     <button type="submit" class="btn btn-primary">Submit Report</button>
                 </form>
             </div>
@@ -1493,6 +1502,66 @@
             btnEl.classList.add('selected');
         }
 
+        let obsPhotoData = null; // compressed base64 data URL, or null if no photo attached
+
+        function handleObsPhotoSelected(event) {
+            const file = event.target.files[0];
+            const statusDiv = document.getElementById('obsPhotoStatus');
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                statusDiv.textContent = '⚠️ Please choose an image file';
+                event.target.value = '';
+                return;
+            }
+
+            statusDiv.textContent = 'Compressing photo...';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // Resize so the longest side is at most 1280px, then re-encode
+                    // as JPEG at 70% quality — a typical phone photo (4-10MB) comes
+                    // down to roughly 150-400KB, well within what we can store and
+                    // email without trouble.
+                    const maxDim = 1280;
+                    let { width, height } = img;
+                    if (width > height && width > maxDim) {
+                        height = Math.round(height * (maxDim / width));
+                        width = maxDim;
+                    } else if (height > maxDim) {
+                        width = Math.round(width * (maxDim / height));
+                        height = maxDim;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+                    obsPhotoData = canvas.toDataURL('image/jpeg', 0.7);
+
+                    document.getElementById('obsPhotoPreview').src = obsPhotoData;
+                    document.getElementById('obsPhotoPreviewWrap').style.display = 'block';
+                    const approxKb = Math.round((obsPhotoData.length * 0.75) / 1024);
+                    statusDiv.textContent = `Photo attached (~${approxKb}KB)`;
+                };
+                img.onerror = function() {
+                    statusDiv.textContent = '⚠️ Could not read that image — try a different photo';
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearObsPhoto() {
+            obsPhotoData = null;
+            document.getElementById('obsPhotoInput').value = '';
+            document.getElementById('obsPhotoPreviewWrap').style.display = 'none';
+            document.getElementById('obsPhotoStatus').textContent = '';
+        }
+
         document.getElementById('observationForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -1508,7 +1577,8 @@
                 location: document.getElementById('obsLocation').value,
                 reportedBy: document.getElementById('obsReportedBy').value,
                 company: document.getElementById('obsCompany').value,
-                contact: document.getElementById('obsContact').value
+                contact: document.getElementById('obsContact').value,
+                photo: obsPhotoData
             };
 
             try {
@@ -1523,6 +1593,7 @@
                 this.reset();
                 document.querySelectorAll('#obsTypePicker .obs-type-btn').forEach(b => b.classList.remove('selected'));
                 document.getElementById('obsType').value = '';
+                clearObsPhoto();
             } catch (error) {
                 console.error('Error submitting observation:', error);
                 showAlert('Failed to submit report — please try again', 'error');
